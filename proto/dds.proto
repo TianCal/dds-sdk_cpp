@@ -1,0 +1,248 @@
+syntax = "proto3";
+package dds;
+
+service DDS {
+    // Given a valid JWT and a expiration timestamp, generates a new JWT token with the expiration time set to the input timestamp.
+    // Requires user jwt.
+    // You cannot refresh an admin token.
+    rpc RefreshToken (RefreshTokenRequest) returns (Jwt);
+
+    // Generates a JWT from a user with a public/secret key pair.
+    // The generated JWT specify the user's role as a user, contains their user_id, which is a base64 encoding of the provided public key.
+    // Requires admin Jwt.
+    rpc ImportUser (UserConsent) returns (Jwt);
+
+    // Creates an entry in DDS storage.
+    // In the entry passed in to the call, the `key_name` field must be nonempty. Every other field is is ignored.
+    // Requires user or admin JWT.
+    // Returns a key_path with current timestamp included.
+    rpc CreateEntry (StorageEntry) returns (StorageEntry);
+
+    // Retrieves entries from DDS storage.
+    // One and only one field among `key_name` and `key_path` is nonempty. If both are nonempty, an error is returned.
+    // If key_name is nonempty, returns the latest version of the entry with that key name.
+    // This is done by first obtaining the timestamp representing the latest version of the entry,
+    // and then retrieving the entry with that timestamp by including the timestamp in key_path.
+    // If key_path is nonempty, returns the entry with the corresponding key path.
+    // If you're looking for a specific version of an entry, use specify the timestamp inside the `key_path` field.
+    // In both cases, the key_name field is empty in the returned StorageEntry. key_path and payload are nonempty.
+    // If an entry is not found. An error is returned.
+    // Note that the returned order of the entries is NOT guaranteed to be the same as the order of the input.
+    // Requires user or admin JWT.
+    rpc ReadEntries (StorageEntries) returns (StorageEntries);
+
+    // Updates an entry in DDS storage.
+    // In the entry passed in to the call, the `key_name` field must be nonempty. Every other field is is ignored.
+    // Creates a new entry with the current timestamp in the key_path field.
+    // Sets the latest entry to current timestamp.
+    // Requires user or admin JWT.
+    // Returns a key_path with current timestamp included.
+    rpc UpdateEntry (StorageEntry) returns (StorageEntry);
+
+    // Deletes an entry from DDS storage.
+    // Sets the latest entry to current timestamp, but unlike UpdateEntry, we do not create a new entry with the current
+    // timestamp in the key_path field. Therefore the current timestamp points to nothing.
+    // Requires user or admin JWT.
+    // Returns a key_path with current timestamp included.
+    rpc DeleteEntry (StorageEntry) returns (StorageEntry);
+
+    // Returns list of entries in DDS storage whose key_path starts with input prefix.
+    // Requires user or admin JWT.
+    rpc ReadKeys (ReadKeysRequest) returns (StorageEntries);
+
+    // An initiator creates a task.
+    // Generate a task_id for this task.
+    // Represent user(initiator) to sign a decision for this task.
+    // Sync this task with other participants.
+    // Send task status to MQ.
+    // In request, protocol_name, protocol_param, participants are required. parent_task is optional.
+    // In response, only task_id will be included.
+    // Require user JWT.
+    rpc CreateTask (Task) returns (Task);
+
+    // A participant confirms a task.
+    // Represent user to sign a decision for this task.
+    // Sync the decision to the initiator.
+    // Send task status to MQ.
+    // In request, task_id is required.
+    // Require user JWT.
+    rpc ConfirmTask (Task) returns (Empty);
+
+    // A participant finishes a task.
+    // Send task status to MQ.
+    // In request, task_id is required.
+    // Require user JWT.
+    rpc FinishTask (Task) returns (Empty);
+
+    // Request the information of the core, including the URI of MQ, and the public key of the core.
+    // Return MQ Information optionally and core public key for this user.
+    // JWT is optional: when request includes jwt, the uri of mq will be returned.
+    rpc RequestCoreInfo (Empty) returns (CoreInfo);
+
+    // Subscribe to changes in the storage.
+    // It will let you subscribe to all changes of key_name in storage since start_timestamp.
+    // The subscription message is formatted in SubscriptionMessage.
+    // Require user JWT.
+    rpc Subscribe (SubscribeRequest) returns (MQQueueName);
+
+    // Unsubscribe the changes in the storage.
+    // Require user JWT.
+    rpc Unsubscribe (MQQueueName) returns (Empty);
+
+    // InterCore RPC.
+    // Sync a task.
+    // If it receives a task with unknown task_id, then create this task in storage and send task status to MQ.
+    // Otherwise, update decisions in storage.
+    // If all participants' decisions are received and it is the initiator, sync the decisions to other participants.
+    // If all participants' decisions are received, send task status to MQ.
+    // The task status in the request should be ignored even if it exists.
+    rpc InterCoreSyncTask (Task) returns (Empty);
+}
+
+message Empty {}
+
+/**
+ * JSON Web Token (JWT) that is used to authenticate a user. The JWT the user's role, user_id - which is the base64 encoding of the public key - and the expiration time.
+ */
+message Jwt {
+    string jwt = 1;
+}
+
+/**
+ * An entry in the DDS storage.
+ */
+message StorageEntry {
+    // The key name of the entry.
+    string key_name = 1;
+    // The path of this entry. May contain information about the user_id, application_id, key name, and the timestamp of the entry.
+    // Note that, unlike other timestamps used in the protocol, the timestamp in the key_path is the number of
+    // *non-leap-nanoseconds* since January 1, 1970 UT, which is different from the unix timestamp.
+    string key_path = 2;
+    // The payload (value) of the entry.
+    bytes payload = 3;
+}
+
+/**
+ * A list of entries.
+ */
+message StorageEntries {
+    repeated StorageEntry entries = 1;
+}
+
+
+/**
+ * Contains the new expiration time to be set for the generated token.
+ *
+ * The old token is contained in the header of this request, under the 'authorization' field.
+ */
+message RefreshTokenRequest {
+    // The new expiration time for the token, in unix timestamp format.
+    int64 expiration_time = 1;
+}
+
+/** 
+ * Import a user from an existing public/secret key pair.
+ *
+ * A signature by the user is required to verify the user's consent to let the core represent the user.
+ *
+ * The signature message is the concatenation of user public key, timestamp at the time of signing, expiration timestamp, and core public key.
+ * The signature will be saved in user's storage and get passed in inter-core communication, so other cores can ensure the core is representing the user by checking both public keys.
+ */
+message UserConsent {
+    // The public key of the user, serialized in compact (default) form.
+    bytes public_key = 1;
+    // Unix timestamp of time of signature, in unix timestamp format.
+    // The signature should be generated within 10 minutes of the time of signature verification
+    int64 signature_timestamp = 2;
+    // The expiration timestamp for the token to be generated, and for the user consent, in unix timestamp format.
+    // We assume the JWT will have the same expiration time as the user consent.
+    int64 expiration_timestamp = 4;
+    // The ECDSA compact signature composed of user public key, timestamp at the time of signing, expiration timestamp, and core public key.
+    // The signature represents the user's consent to let the core represent the user by including the trusted core's public key.
+    bytes signature = 3;
+}
+
+message ReadKeysRequest {
+    // The prefix of the key_path of the entries to be retrieved.
+    string prefix = 1;
+    bool include_history = 2;
+}
+
+message Participant {
+    // The user id of this participant.
+    string user_id = 1;
+    // Type of this participant in the protocol.
+    string ptype = 2;
+}
+
+message Decision {
+    // Approved / Rejected
+    bool is_approved = 1;
+    bool is_rejected = 2;
+    // Reason
+    string reason = 3;
+    // Signature
+    bytes signature = 4;
+    // Core's public key
+    bytes core_public_key = 5;
+    // User consent
+    UserConsent user_consent = 6;
+}
+
+message Task {
+    // The id of this task.
+    string task_id = 1;
+    // The protocol of this task.
+    string protocol_name = 2;
+    // The protocol parameters (after serialization).
+    bytes protocol_param = 3;
+    // The list of participants (initiator should be placed first).
+    repeated Participant participants = 4;
+    // The task id of the parent task.
+    string parent_task = 5;
+    // Whether the task requires the signed decisions from all participants to start. If require_agreement=False, the task starts without confirming replies from others.
+    bool require_agreement = 9;
+    // The list of signatures (align with participants).
+    repeated Decision decisions = 6;
+    // The status of this task.
+    string status = 7;
+    // The expiration time for waiting for others' decisions, in unix timestamp format.
+    int64 expiration_time = 8;
+}
+
+message CoreInfo {
+    // The URI of MQ.
+    string mq_uri = 1;
+    // The public key of the core, serialized in compact (default) form.
+    bytes core_public_key = 2;
+}
+
+message SubscribeRequest {
+    // The key_name of the entry to be subscribed.
+    string key_name = 1;
+    // start_timestamp, in the same format as the timestamp in the storage. Not in unix timestamp format.
+    int64 start_timestamp = 2;
+}
+
+message SubscriptionMessage {
+    // The type of change of the storage entry. valid values: create/update/delete/in-storage.
+    string change_type = 1;
+    // The key_path of the storage entry.
+    string key_path = 2;
+    // The payload (value) of the storage entry.
+    bytes payload = 3;
+}
+
+message MQQueueName {
+    // The name of the generated queue for this subscription.
+    string queue_name = 1;
+}
+
+message DDSInternalTaskIDWithKeyPath {
+    string key_path = 1;
+    string task_id = 2;
+}
+
+message DDSInternalTaskIDList {
+    repeated DDSInternalTaskIDWithKeyPath task_ids_with_key_paths = 1;
+}
