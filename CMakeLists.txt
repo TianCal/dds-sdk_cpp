@@ -68,7 +68,7 @@ ExternalProject_Add(libamqpcpp
     INSTALL_DIR ${AMQPCPP_ROOT}
 )
 set(AMQPCPP_INCLUDE_DIR ${AMQPCPP_ROOT}/include)
-set(AMQPCPP_LIBRARIES ${AMQPCPP_ROOT}/lib/libamqpcpp.a)
+set(AMQPCPP_LIBRARIES ${AMQPCPP_ROOT}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}amqpcpp${CMAKE_STATIC_LIBRARY_SUFFIX})
 message(STATUS "Found external dependency AMQP-CPP: " ${AMQPCPP_INCLUDE_DIR})
 include_directories(${AMQPCPP_INCLUDE_DIR})
 list(APPEND LIBRARIES ${AMQPCPP_LIBRARIES})
@@ -90,7 +90,7 @@ ExternalProject_Add(libsecp256k1
     INSTALL_DIR ${SECP256K1_ROOT}
 )
 add_library(Secp256k1 STATIC IMPORTED)
-set(SECP256K1_LIBRARY ${SECP256K1_ROOT}/lib/libsecp256k1.a)
+set(SECP256K1_LIBRARY ${SECP256K1_ROOT}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}secp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(SECP256K1_INCLUDE_DIR ${SECP256K1_ROOT}/include)
 file(MAKE_DIRECTORY ${SECP256K1_INCLUDE_DIR})  # Must exist.
 set_property(TARGET Secp256k1 PROPERTY IMPORTED_LOCATION ${SECP256K1_LIBRARY})
@@ -101,7 +101,9 @@ list(APPEND LIBRARIES ${SECP256K1_LIBRARY})
 list(APPEND DEPENDENCIES libsecp256k1)
 
 ########################################################################
+# Crypto++
 
+########################################################################
 foreach(_target sample_client)
     add_executable(${_target} "${_target}.cc")
     target_link_libraries(${_target}

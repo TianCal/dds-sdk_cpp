@@ -2,11 +2,14 @@
 #include <grpc++/grpc++.h>
 #include <memory>
 #include <iostream>
+#include <chrono>
 #include <tuple>
 #include <secp256k1.h>
 using dds::CoreInfo;
 using dds::DDS;
 using dds::Empty;
+using dds::Jwt;
+using dds::UserConsent;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
@@ -19,9 +22,35 @@ public:
         jwt = admin_jwt;
     }
 
-    std::string import_user()
+    std::string import_user(secp256k1_pubkey core_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature)
     {
+        unsigned char compressed_core_public_key_bytes[33];
+        size_t compressed_core_public_key_len = sizeof(compressed_core_public_key_bytes);
+        secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
+        int successful_seriazliation = secp256k1_ec_pubkey_serialize(ctx, compressed_core_public_key_bytes, &compressed_core_public_key_len, &core_public_key, SECP256K1_EC_COMPRESSED);
+        assert(successful_seriazliation);
+
+        UserConsent request;
+        request.set_public_key(compressed_core_public_key_bytes, compressed_core_public_key_len);
+        request.set_signature_timestamp(signature_timestamp);
+        request.set_expiration_timestamp(expiration_timestamp);
+        request.set_signature(signature, sizeof(signature));
+
+        Jwt response;
+        ClientContext context;
+        context.AddMetadata("authorization", this->jwt);
+        Status status;
+        status = _stub->ImportUser(&context, request, &response);
+        if (status.ok())
+        {
+            return response.jwt();
+        }
+        else
+        {
+            throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+        }
     }
+
     std::tuple<std::string, secp256k1_pubkey> request_core_info()
     {
         // Request(Empty)
@@ -56,6 +85,16 @@ private:
     std::unique_ptr<DDS::Stub> _stub;
     std::string jwt;
 };
+
+std::tuple<int, const unsigned char *> prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp)
+{
+    int64_t signature_timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
+    secp256k1_ecdsa_signature sig;
+
+    unsigned char msg_hash[32];
+    secp256k1_ecdsa_sign(ctx, &sig, msg_hash, user_sec_key, NULL, NULL);
+}
 
 int main(int argc, char **argv)
 {
