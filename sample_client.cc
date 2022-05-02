@@ -9,7 +9,7 @@
 #include <tuple>
 #include <secp256k1.h>
 #include <openssl/sha.h>
-#include <random.h>
+#include "random.h"
 using dds::CoreInfo;
 using dds::DDS;
 using dds::Empty;
@@ -147,7 +147,7 @@ std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256
     {
         throw std::invalid_argument("Cannot serialize signature");
     }
-    return signature_timestamp, serialized_signature;
+    return std::make_tuple(signature_timestamp, serialized_signature);
 }
 
 /*int main(int argc, char **argv)
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
     assert(return_val);
     std::int64_t signature_timestamp;
     const unsigned char *serialized_signature;
-    std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_pubkey, seckey, expiration_timestamp);
+    std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_pubkey, seckey, core_public_key, expiration_timestamp);
     std::cout << client.import_user(core_public_key, signature_timestamp, expiration_timestamp, serialized_signature);
     return 0;
 }
