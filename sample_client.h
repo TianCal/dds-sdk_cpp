@@ -37,6 +37,8 @@ public:
     std::string import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature);
     std::tuple<std::string, secp256k1_pubkey> request_core_info();
     std::string create_entry(std::string key_name, unsigned char *payload, size_t payload_size);
+    std::string update_entry(std::string key_name, unsigned char *payload, size_t payload_size);
+    std::vector<StorageEntry> read_entries(std::vector<StorageEntry> entries);
     void import_guest_jwt(std::string jwt);
     void import_core_addr(std::string user_id, std::string core_addr);
 

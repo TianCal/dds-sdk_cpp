@@ -22,6 +22,7 @@ using dds::DDS;
 using dds::Empty;
 using dds::Jwt;
 using dds::StorageEntry;
+using dds::StorageEntries;
 using dds::UserConsent;
 using grpc::Channel;
 using grpc::ClientContext;
@@ -105,19 +106,17 @@ std::tuple<std::string, secp256k1_pubkey> DDSClient::request_core_info()
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
 }
+
 std::string DDSClient::create_entry(std::string key_name, unsigned char *payload, size_t payload_size)
 {
-    // Request(Empty)
     StorageEntry request;
     request.set_key_name(key_name);
     request.set_payload(payload, payload_size);
-    // Send req
     StorageEntry response;
     ClientContext context;
     context.AddMetadata("authorization", this->jwt);
     Status status;
     status = _stub->CreateEntry(&context, request, &response);
-    // Handle response
     if (status.ok())
     {
         return response.key_path();
@@ -126,6 +125,47 @@ std::string DDSClient::create_entry(std::string key_name, unsigned char *payload
     {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
+}
+
+std::string DDSClient::update_entry(std::string key_name, unsigned char *payload, size_t payload_size)
+{
+    StorageEntry request;
+    request.set_key_name(key_name);
+    request.set_payload(payload, payload_size);
+    StorageEntry response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->UpdateEntry(&context, request, &response);
+    if (status.ok())
+    {
+        return response.key_path();
+    }
+    else
+    {
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
+}
+
+std::vector<StorageEntry> DDSClient::read_entries(std::vector<StorageEntry> entries)
+{
+    StorageEntries request;
+    
+    for (int i = 0; i < entries.size(); i++){
+        StorageEntry* curr_entry = request.add_entries();
+        curr_entry->CopyFrom(entries[i]);
+    }
+    StorageEntries response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->ReadEntries(&context, request, &response);
+
+    std::vector<StorageEntry> ret;
+    for (int i = 0; i < response.entries_size(); i++) {
+        ret.push_back(response.entries(i));
+    }
+    return ret;
 }
 
 void DDSClient::import_guest_jwt(std::string jwt)
