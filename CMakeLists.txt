@@ -103,6 +103,7 @@ list(APPEND DEPENDENCIES libsecp256k1)
 ########################################################################
 # Crypto++
 
+
 ########################################################################
 foreach(_target sample_client)
     add_executable(${_target} "${_target}.cc")
@@ -112,10 +113,12 @@ foreach(_target sample_client)
             ${_REFLECTION}
             ${_GRPC_GRPCPP})
     target_link_libraries(${_target} ${LIBRARIES})
-    add_dependencies(${_target} ${DEPENDENCIES})        
+    add_dependencies(${_target} ${DEPENDENCIES}) 
 endforeach()
-
 add_executable(ddssdk main.cpp)
+
+find_package(nlohmann_json REQUIRED)
+target_link_libraries(sample_client nlohmann_json::nlohmann_json)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

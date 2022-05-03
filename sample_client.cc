@@ -10,6 +10,7 @@
 #include <tuple>
 
 #include <secp256k1.h>
+#include "nlohmann/json.hpp"
 
 #include <openssl/sha.h>
 #include <openssl/evp.h>
@@ -30,6 +31,14 @@ struct JWT{
     int64_t exp;
 };
 
+void to_json(nlohmann::json& j, const struct JWT& value) {
+    j = nlohmann::json{ {"role", value.role}, {"user_id", value.user_id}, {"exp", value.exp} };
+}
+void from_json(const nlohmann::json& j, struct JWT& value) {
+    j.at("role").get_to(value.role);
+    j.at("user_id").get_to(value.user_id);
+    j.at("exp").get_to(value.exp);
+}
 class DDSClient
 {
 public:
@@ -131,17 +140,21 @@ auto DecodeBase64(const std::string &to_decode) -> std::string
     return output_buffer.get();
 }
 
-void decode_jwt_without_validation(std::string jwt)
+struct JWT decode_jwt_without_validation(std::string jwt)
 {
     std::vector<std::string> splitted_jwt = split(jwt, '.');
     std::string decoded = base64_decode(splitted_jwt[1]);
-    std::cout << decoded <<std::endl;
+    //std::cout << decoded <<std::endl;
+    nlohmann::json json_JWT = nlohmann::json::parse(decoded);
+    struct JWT structed_JWT = json_JWT.get<struct JWT>(); 
+    //std::cout << structed_JWT.user_id << std::endl;
+    return structed_JWT;
 }
 
 std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp)
 {
-    // int64_t signature_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    int64_t signature_timestamp = 1651537665;
+    int64_t signature_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    //int64_t signature_timestamp = 1651537665;
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
     unsigned char compressed_core_pubkey[33];
     unsigned char compressed_user_pubkey[33];
@@ -207,10 +220,10 @@ int main(int argc, char **argv)
 {
     std::string server_address{"127.0.0.1:8027"};
     // std::string jwt = argv[1];
-    std::string core_jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyX2lkIjoiX2FkbWluIiwiZXhwIjoxNjUxNzE1Njg3fQ.pakDhL__f6LTqM2cLna5E0Wsv7sFzU_UG8VgY_Z1UPI";
+    std::string core_jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyX2lkIjoiX2FkbWluIiwiZXhwIjoxNjUxNzc0ODAyfQ.f6Bd-LQR57_EXdQtb6tyxDbKWalyCyNy51HEqKSYGDo";
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), core_jwt};
-    // int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 *31;
-    int64_t expiration_timestamp = 1651537665 + 86400 * 31;
+    int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 *31;
+    //int64_t expiration_timestamp = 1651537665 + 86400 * 31;
     secp256k1_pubkey core_public_key;
     std::string core_mq_uri;
     std::tie(core_mq_uri, core_public_key) = client.request_core_info();
