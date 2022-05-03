@@ -118,13 +118,9 @@ std::string DDSClient::create_entry(std::string key_name, unsigned char *payload
     Status status;
     status = _stub->CreateEntry(&context, request, &response);
     if (status.ok())
-    {
         return response.key_path();
-    }
     else
-    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
-    }
 }
 
 std::string DDSClient::update_entry(std::string key_name, unsigned char *payload, size_t payload_size)
@@ -138,13 +134,24 @@ std::string DDSClient::update_entry(std::string key_name, unsigned char *payload
     Status status;
     status = _stub->UpdateEntry(&context, request, &response);
     if (status.ok())
-    {
         return response.key_path();
-    }
     else
-    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
-    }
+}
+
+std::string DDSClient::delete_entry(std::string key_name)
+{
+    StorageEntry request;
+    request.set_key_name(key_name);
+    StorageEntry response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->DeleteEntry(&context, request, &response);
+    if (status.ok())
+        return response.key_path();
+    else
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
 }
 
 std::vector<StorageEntry> DDSClient::read_entries(std::vector<StorageEntry> entries)

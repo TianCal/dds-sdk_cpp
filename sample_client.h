@@ -38,6 +38,7 @@ public:
     std::tuple<std::string, secp256k1_pubkey> request_core_info();
     std::string create_entry(std::string key_name, unsigned char *payload, size_t payload_size);
     std::string update_entry(std::string key_name, unsigned char *payload, size_t payload_size);
+    std::string delete_entry(std::string key_name);
     std::vector<StorageEntry> read_entries(std::vector<StorageEntry> entries);
     void import_guest_jwt(std::string jwt);
     void import_core_addr(std::string user_id, std::string core_addr);
