@@ -16,6 +16,7 @@ int main(int, char**) {
     return 0;
 }
 
+
 int main(int argc, char **argv)
 {
     std::string server_address{"127.0.0.1:8027"};
@@ -29,22 +30,12 @@ int main(int argc, char **argv)
     std::tie(core_mq_uri, core_public_key) = client.request_core_info();
 
     unsigned char seckey[32];
-    secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    while (1) {
-        if (!fill_random(seckey, sizeof(seckey))) {
-            printf("Failed to generate randomness\n");
-            return 1;
-        }
-        if (secp256k1_ec_seckey_verify(ctx, seckey)) {
-            break;
-        }
-    }
-    secp256k1_pubkey user_pubkey;
-    int return_val = secp256k1_ec_pubkey_create(ctx, &user_pubkey, seckey);
-    assert(return_val);
+    secp256k1_pubkey user_public_key = generate_user(seckey);
+
     std::int64_t signature_timestamp;
     const unsigned char *serialized_signature;
-    std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_pubkey, seckey, core_public_key, expiration_timestamp);
-    std::cout << client.import_user(user_pubkey, signature_timestamp, expiration_timestamp, serialized_signature);
+    std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_public_key, seckey, core_public_key, expiration_timestamp);
+    std::cout << client.import_user(user_public_key, signature_timestamp, expiration_timestamp, serialized_signature) << std::endl;
     return 0;
-}*/
+}
+*/

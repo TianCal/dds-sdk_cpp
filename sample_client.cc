@@ -138,8 +138,10 @@ std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256
     secp256k1_ecdsa_signature_serialize_compact(ctx, serialized_signature, &sig);
     return std::make_tuple(signature_timestamp, serialized_signature);
 }
-void generate_user(secp256k1_pubkey user_public_key, unsigned char* seckey) 
+
+secp256k1_pubkey generate_user(unsigned char* seckey) 
 {
+    secp256k1_pubkey user_public_key;
     secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
     while (1) {
         if (!fill_random(seckey, 32)) {
@@ -151,6 +153,7 @@ void generate_user(secp256k1_pubkey user_public_key, unsigned char* seckey)
     }
     if (!secp256k1_ec_pubkey_create(ctx, &user_public_key, seckey))
         throw std::invalid_argument("Cannot create publickey");
+    return user_public_key;
 }
 
 int main(int argc, char **argv)
@@ -166,19 +169,8 @@ int main(int argc, char **argv)
     std::tie(core_mq_uri, core_public_key) = client.request_core_info();
 
     unsigned char seckey[32];
-    secp256k1_pubkey user_public_key;
-    //generate_user(user_public_key, seckey);
-    secp256k1_context* ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
-    while (1) {
-        if (!fill_random(seckey, 32)) {
-            throw std::invalid_argument("Failed to generate randomness\n");
-        }
-        if (secp256k1_ec_seckey_verify(ctx, seckey)) {
-            break;
-        }
-    }
-    if (!secp256k1_ec_pubkey_create(ctx, &user_public_key, seckey))
-        throw std::invalid_argument("Cannot create publickey");
+    secp256k1_pubkey user_public_key = generate_user(seckey);
+
     std::int64_t signature_timestamp;
     const unsigned char *serialized_signature;
     std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_public_key, seckey, core_public_key, expiration_timestamp);
