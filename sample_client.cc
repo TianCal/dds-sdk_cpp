@@ -27,19 +27,21 @@ public:
         jwt = admin_jwt;
     }
 
-    std::string import_user(secp256k1_pubkey core_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature)
+    std::string import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature)
     {
-        unsigned char compressed_core_public_key_bytes[33];
-        size_t compressed_core_public_key_len = sizeof(compressed_core_public_key_bytes);
+        unsigned char compressed_user_public_key_bytes[33];
+        size_t compressed_user_public_key_len = sizeof(compressed_user_public_key_bytes);
         secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
-        int successful_seriazliation = secp256k1_ec_pubkey_serialize(ctx, compressed_core_public_key_bytes, &compressed_core_public_key_len, &core_public_key, SECP256K1_EC_COMPRESSED);
-        assert(successful_seriazliation);
+        if (!secp256k1_ec_pubkey_serialize(ctx, compressed_user_public_key_bytes, &compressed_user_public_key_len, &user_public_key, SECP256K1_EC_COMPRESSED))
+        {
+             throw std::invalid_argument("Cannot serialize user public key");
+        }
 
         UserConsent request;
-        request.set_public_key(compressed_core_public_key_bytes, compressed_core_public_key_len);
+        request.set_public_key(compressed_user_public_key_bytes, compressed_user_public_key_len);
         request.set_signature_timestamp(signature_timestamp);
         request.set_expiration_timestamp(expiration_timestamp);
-        request.set_signature(signature, sizeof(signature));
+        request.set_signature(signature, 64);
 
         Jwt response;
         ClientContext context;
@@ -52,6 +54,7 @@ public:
         }
         else
         {
+            return "bad";
             throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
         }
     }
@@ -91,25 +94,11 @@ private:
     std::string jwt;
 };
 
-std::string sha256(const std::string str)
-{
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, str.c_str(), str.size());
-    SHA256_Final(hash, &sha256);
-    std::stringstream ss;
-    for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
-    {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-    }
-    return ss.str();
-}
 std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp)
 {
-    int64_t signature_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    //int64_t signature_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t signature_timestamp = 1651537665 ;
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
-    secp256k1_ecdsa_signature sig;
     unsigned char compressed_core_pubkey[33];
     unsigned char compressed_user_pubkey[33];
     size_t compressed_pubkey_len;
@@ -124,6 +113,7 @@ std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256
          throw std::invalid_argument("Invalid core public key passed");
     }
     unsigned char signature_time_stamp_bytes[sizeof(signature_timestamp)];
+
     std::copy(static_cast<const unsigned char*>(static_cast<const void*>(&signature_timestamp)),
           static_cast<const unsigned char*>(static_cast<const void*>(&signature_timestamp)) + sizeof signature_timestamp,
           signature_time_stamp_bytes);
@@ -136,17 +126,16 @@ std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256
     memcpy(msg + sizeof(compressed_user_pubkey), signature_time_stamp_bytes, sizeof(signature_time_stamp_bytes));
     memcpy(msg + sizeof(compressed_user_pubkey) + sizeof(signature_time_stamp_bytes), expiration_time_stamp_bytes, sizeof(expiration_time_stamp_bytes));
     memcpy(msg + sizeof(compressed_user_pubkey) + sizeof(signature_time_stamp_bytes) + sizeof(expiration_time_stamp_bytes), compressed_core_pubkey, sizeof(compressed_core_pubkey));
-    std::string msg_str(reinterpret_cast<char*>(msg));
-    const unsigned char* msg_hash = reinterpret_cast<unsigned char*>(const_cast<char*>(sha256(msg_str).c_str()));
+    unsigned char msg_hash[SHA256_DIGEST_LENGTH];
+    SHA256(msg, sizeof(msg), msg_hash);
+    //std::cout << msg_hash;
+    secp256k1_ecdsa_signature sig;
     if (!secp256k1_ecdsa_sign(ctx, &sig, msg_hash, user_sec_key, NULL, NULL))
     {
         throw std::invalid_argument("Cannot sign the message");
     }
     unsigned char serialized_signature[64];
-    if (!secp256k1_ecdsa_signature_serialize_compact(ctx, serialized_signature, &sig))
-    {
-        throw std::invalid_argument("Cannot serialize signature");
-    }
+    secp256k1_ecdsa_signature_serialize_compact(ctx, serialized_signature, &sig);
     return std::make_tuple(signature_timestamp, serialized_signature);
 }
 
@@ -165,11 +154,12 @@ std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256
 
 int main(int argc, char **argv)
 {
-    std::string server_address{"127.0.0.1:8080"};
+    std::string server_address{"127.0.0.1:8027"};
     // std::string jwt = argv[1];
-    std::string jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyX2lkIjoiX2FkbWluIiwiZXhwIjoxNjUxNzAzMTM0fQ.1KKgJhbv7AvXDCKr4B53OmQDzOsaCwPC12kw3VHNliU";
+    std::string jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyX2lkIjoiX2FkbWluIiwiZXhwIjoxNjUxNzE1Njg3fQ.pakDhL__f6LTqM2cLna5E0Wsv7sFzU_UG8VgY_Z1UPI";
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
-    int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 *31;
+    //int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 *31;
+    int64_t expiration_timestamp = 1651537665 + 86400 *31;
     secp256k1_pubkey core_public_key;
     std::string core_mq_uri;
     std::tie(core_mq_uri, core_public_key) = client.request_core_info();
@@ -191,6 +181,6 @@ int main(int argc, char **argv)
     std::int64_t signature_timestamp;
     const unsigned char *serialized_signature;
     std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_pubkey, seckey, core_public_key, expiration_timestamp);
-    std::cout << client.import_user(core_public_key, signature_timestamp, expiration_timestamp, serialized_signature);
+    std::cout << client.import_user(user_pubkey, signature_timestamp, expiration_timestamp, serialized_signature);
     return 0;
 }
