@@ -1,3 +1,4 @@
+#include "sample_client.h"
 #include "dds.grpc.pb.h"
 #include <grpc++/grpc++.h>
 #include <memory>
@@ -20,100 +21,133 @@ using dds::CoreInfo;
 using dds::DDS;
 using dds::Empty;
 using dds::Jwt;
+using dds::StorageEntry;
 using dds::UserConsent;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
-struct JWT{
-    std::string role;
-    std::string user_id;
-    int64_t exp;
-};
-
-void to_json(nlohmann::json& j, const struct JWT& value) {
-    j = nlohmann::json{ {"role", value.role}, {"user_id", value.user_id}, {"exp", value.exp} };
+void to_json(nlohmann::json &j, const JWT &value)
+{
+    j = nlohmann::json{{"role", value.role}, {"user_id", value.user_id}, {"exp", value.exp}};
 }
-void from_json(const nlohmann::json& j, struct JWT& value) {
+void from_json(const nlohmann::json &j, JWT &value)
+{
     j.at("role").get_to(value.role);
     j.at("user_id").get_to(value.user_id);
     j.at("exp").get_to(value.exp);
 }
-class DDSClient
+
+DDSClient::DDSClient(std::shared_ptr<Channel> channel, std::string admin_jwt)
 {
-public:
-    DDSClient(std::shared_ptr<Channel> channel, std::string admin_jwt)
+    _stub = DDS::NewStub(channel);
+    jwt = admin_jwt;
+}
+
+std::string DDSClient::import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature)
+{
+    unsigned char compressed_user_public_key_bytes[33];
+    size_t compressed_user_public_key_len = sizeof(compressed_user_public_key_bytes);
+    secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
+    if (!secp256k1_ec_pubkey_serialize(ctx, compressed_user_public_key_bytes, &compressed_user_public_key_len, &user_public_key, SECP256K1_EC_COMPRESSED))
     {
-        _stub = DDS::NewStub(channel);
-        jwt = admin_jwt;
+        throw std::invalid_argument("Cannot serialize user public key");
     }
 
-    std::string import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature)
+    UserConsent request;
+    request.set_public_key(compressed_user_public_key_bytes, compressed_user_public_key_len);
+    request.set_signature_timestamp(signature_timestamp);
+    request.set_expiration_timestamp(expiration_timestamp);
+    request.set_signature(signature, 64);
+
+    Jwt response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->ImportUser(&context, request, &response);
+    if (status.ok())
     {
-        unsigned char compressed_user_public_key_bytes[33];
-        size_t compressed_user_public_key_len = sizeof(compressed_user_public_key_bytes);
+        return response.jwt();
+    }
+    else
+    {
+        // return "bad";
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
+}
+
+std::tuple<std::string, secp256k1_pubkey> DDSClient::request_core_info()
+{
+    // Request(Empty)
+    Empty request;
+
+    // Send req
+    CoreInfo response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->RequestCoreInfo(&context, request, &response);
+
+    // Handle response
+    if (status.ok())
+    {
+        secp256k1_pubkey core_public_key;
         secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
-        if (!secp256k1_ec_pubkey_serialize(ctx, compressed_user_public_key_bytes, &compressed_user_public_key_len, &user_public_key, SECP256K1_EC_COMPRESSED))
-        {
-            throw std::invalid_argument("Cannot serialize user public key");
-        }
-
-        UserConsent request;
-        request.set_public_key(compressed_user_public_key_bytes, compressed_user_public_key_len);
-        request.set_signature_timestamp(signature_timestamp);
-        request.set_expiration_timestamp(expiration_timestamp);
-        request.set_signature(signature, 64);
-
-        Jwt response;
-        ClientContext context;
-        context.AddMetadata("authorization", this->jwt);
-        Status status;
-        status = _stub->ImportUser(&context, request, &response);
-        if (status.ok())
-        {
-            return response.jwt();
-        }
-        else
-        {
-            // return "bad";
-            throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
-        }
+        std::string compressed_core_public_key = response.core_public_key();
+        unsigned char compressed_core_public_key_bytes[33] = {0};
+        std::memcpy(compressed_core_public_key_bytes, compressed_core_public_key.data(), compressed_core_public_key.length());
+        if (!secp256k1_ec_pubkey_parse(ctx, &core_public_key, compressed_core_public_key_bytes, sizeof(compressed_core_public_key_bytes)))
+            throw std::invalid_argument("The public key could not be decoded in compressed serialized format");
+        return std::make_tuple(response.mq_uri(), core_public_key);
     }
-
-    std::tuple<std::string, secp256k1_pubkey> request_core_info()
+    else
     {
-        // Request(Empty)
-        Empty request;
-
-        // Send req
-        CoreInfo response;
-        ClientContext context;
-        context.AddMetadata("authorization", this->jwt);
-        Status status;
-        status = _stub->RequestCoreInfo(&context, request, &response);
-
-        // Handle response
-        if (status.ok())
-        {
-            secp256k1_pubkey core_public_key;
-            secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
-            std::string compressed_core_public_key = response.core_public_key();
-            unsigned char compressed_core_public_key_bytes[33] = {0};
-            std::memcpy(compressed_core_public_key_bytes, compressed_core_public_key.data(), compressed_core_public_key.length());
-            if (!secp256k1_ec_pubkey_parse(ctx, &core_public_key, compressed_core_public_key_bytes, sizeof(compressed_core_public_key_bytes)))
-                throw std::invalid_argument("The public key could not be decoded in compressed serialized format");
-            return std::make_tuple(response.mq_uri(), core_public_key);
-        }
-        else
-        {
-            throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
-        }
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
+}
+std::string DDSClient::create_entry(std::string key_name, unsigned char *payload, size_t payload_size)
+{
+    // Request(Empty)
+    StorageEntry request;
+    request.set_key_name(key_name);
+    request.set_payload(payload, payload_size);
+    // Send req
+    StorageEntry response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->CreateEntry(&context, request, &response);
+    // Handle response
+    if (status.ok())
+    {
+        return response.key_path();
+    }
+    else
+    {
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
+}
 
-private:
-    std::unique_ptr<DDS::Stub> _stub;
-    std::string jwt;
-};
+void DDSClient::import_guest_jwt(std::string jwt)
+{
+    JWT jwt_decoded = decode_jwt_without_validation(jwt);
+    std::string key_name = "_dds_internal:known_users:" + jwt_decoded.user_id + ":guest_jwt";
+    unsigned char *jwt_bytes;
+    std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&jwt)),
+              static_cast<const unsigned char *>(static_cast<const void *>(&jwt)) + sizeof jwt,
+              jwt_bytes);
+    this->create_entry(key_name, jwt_bytes, sizeof(jwt));
+}
+
+void DDSClient::import_core_addr(std::string user_id, std::string core_addr)
+{
+    std::string key_name = "_dds_internal:known_users:" + user_id + ":core_addr";
+    unsigned char *core_addr_bytes;
+    std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&core_addr)),
+              static_cast<const unsigned char *>(static_cast<const void *>(&core_addr)) + sizeof core_addr,
+              core_addr_bytes);
+    this->create_entry(key_name, core_addr_bytes, sizeof(core_addr));
+}
 
 std::vector<std::string> split(const std::string &s, char delim)
 {
@@ -127,6 +161,7 @@ std::vector<std::string> split(const std::string &s, char delim)
     }
     return elems;
 }
+
 auto DecodeBase64(const std::string &to_decode) -> std::string
 {
     const auto predicted_len = 3 * to_decode.length() / 4; // predict output size
@@ -140,21 +175,21 @@ auto DecodeBase64(const std::string &to_decode) -> std::string
     return output_buffer.get();
 }
 
-struct JWT decode_jwt_without_validation(std::string jwt)
+JWT decode_jwt_without_validation(std::string jwt)
 {
     std::vector<std::string> splitted_jwt = split(jwt, '.');
     std::string decoded = base64_decode(splitted_jwt[1]);
-    //std::cout << decoded <<std::endl;
+    // std::cout << decoded <<std::endl;
     nlohmann::json json_JWT = nlohmann::json::parse(decoded);
-    struct JWT structed_JWT = json_JWT.get<struct JWT>(); 
-    //std::cout << structed_JWT.user_id << std::endl;
+    JWT structed_JWT = json_JWT.get<JWT>();
+    // std::cout << structed_JWT.user_id << std::endl;
     return structed_JWT;
 }
 
 std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp)
 {
     int64_t signature_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    //int64_t signature_timestamp = 1651537665;
+    // int64_t signature_timestamp = 1651537665;
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
     unsigned char compressed_core_pubkey[33];
     unsigned char compressed_user_pubkey[33];
@@ -222,19 +257,38 @@ int main(int argc, char **argv)
     // std::string jwt = argv[1];
     std::string core_jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyX2lkIjoiX2FkbWluIiwiZXhwIjoxNjUxNzc0ODAyfQ.f6Bd-LQR57_EXdQtb6tyxDbKWalyCyNy51HEqKSYGDo";
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), core_jwt};
-    int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 *31;
-    //int64_t expiration_timestamp = 1651537665 + 86400 * 31;
-    secp256k1_pubkey core_public_key;
-    std::string core_mq_uri;
-    std::tie(core_mq_uri, core_public_key) = client.request_core_info();
+    int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 * 31;
+    // int64_t expiration_timestamp = 1651537665 + 86400 * 31;
+    int num = 2;
+    std::string users[num];
+    for (int i = 0; i < num; i++)
+    {
+        secp256k1_pubkey core_public_key;
+        std::string core_mq_uri;
+        std::tie(core_mq_uri, core_public_key) = client.request_core_info();
 
-    unsigned char seckey[32];
-    secp256k1_pubkey user_public_key = generate_user(seckey);
-    std::int64_t signature_timestamp;
-    const unsigned char *serialized_signature;
-    std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_public_key, seckey, core_public_key, expiration_timestamp);
-    std::string jwt = client.import_user(user_public_key, signature_timestamp, expiration_timestamp, serialized_signature);
-    std::cout << jwt << std::endl;
-    decode_jwt_without_validation(jwt);
+        unsigned char seckey[32];
+        secp256k1_pubkey user_public_key = generate_user(seckey);
+        std::int64_t signature_timestamp;
+        const unsigned char *serialized_signature;
+        std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_public_key, seckey, core_public_key, expiration_timestamp);
+        users[i] = client.import_user(user_public_key, signature_timestamp, expiration_timestamp, serialized_signature);
+    }
+
+    for (int i = 0; i < num; i++)
+    {
+        for (int j = 0; j < num; j++)
+        {
+            if (i != j)
+            {
+                DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), users[i]};
+                client.import_guest_jwt(users[j]);
+                JWT jwt = decode_jwt_without_validation(users[j]);
+                client.import_core_addr(jwt.user_id, server_address);
+            }
+        }
+    }
+    for (int i = 0; i < num; i++)
+        std::cout << users[i] << std::endl;
     return 0;
 }
