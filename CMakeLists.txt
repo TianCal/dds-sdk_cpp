@@ -103,6 +103,9 @@ include_directories(${SimpleAmqpClient_INCLUDE_DIR})
 list(APPEND LIBRARIES ${SimpleAmqpClient_LIBRARY})
 list(APPEND DEPENDENCIES SimpleAmqpClient)
 
+find_package(Boost 1.47.0 COMPONENTS chrono system REQUIRED)
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
 ########################################################################
 foreach(_target sample_client main)
     add_executable(${_target} "${_target}.cc")
