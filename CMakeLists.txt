@@ -90,11 +90,11 @@ list(APPEND DEPENDENCIES libsecp256k1)
 include(ExternalProject)
 ExternalProject_Add(SimpleAmqpClient
     GIT_REPOSITORY https://github.com/alanxz/SimpleAmqpClient.git
-    CMAKE_ARGS -Wno-dev "-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DCMAKE_TOOLCHAIN_FILE=<TOOLCHAIN>"
+    CMAKE_ARGS  -Wno-dev 
+                -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/SimpleAmqpClient
+                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
     BUILD_COMMAND make
     INSTALL_COMMAND make install
-    INSTALL_DIR SimpleAmqpClient
-    TOOLCHAIN ${CMAKE_TOOLCHAIN_FILE}
 )
 ExternalProject_Get_Property(SimpleAmqpClient INSTALL_DIR)
 set(SimpleAmqpClient_LIBRARY ${INSTALL_DIR}/lib/libSimpleAmqpClient${CMAKE_SHARED_LIBRARY_SUFFIX})
