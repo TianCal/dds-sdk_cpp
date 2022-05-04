@@ -58,21 +58,6 @@ target_link_libraries(dds_grpc_proto
         ${_GRPC_GRPCPP})
 
 ########################################################################
-# RabbitMQ
-
-include(ExternalProject)
-set(AMQPCPP_ROOT "${CMAKE_CURRENT_BINARY_DIR}/amqpcpp")
-ExternalProject_Add(libamqpcpp
-    URL "https://github.com/CopernicaMarketingSoftware/AMQP-CPP/archive/refs/tags/v4.3.16.tar.gz"
-    CMAKE_ARGS -Wno-dev "-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>"
-    INSTALL_DIR ${AMQPCPP_ROOT}
-)
-set(AMQPCPP_INCLUDE_DIR ${AMQPCPP_ROOT}/include)
-set(AMQPCPP_LIBRARIES ${AMQPCPP_ROOT}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}amqpcpp${CMAKE_STATIC_LIBRARY_SUFFIX})
-message(STATUS "Found external dependency AMQP-CPP: " ${AMQPCPP_INCLUDE_DIR})
-include_directories(${AMQPCPP_INCLUDE_DIR})
-list(APPEND LIBRARIES ${AMQPCPP_LIBRARIES})
-list(APPEND DEPENDENCIES libamqpcpp)
 
 ########################################################################
 # Secp256k1
@@ -95,7 +80,6 @@ set(SECP256K1_INCLUDE_DIR ${SECP256K1_ROOT}/include)
 file(MAKE_DIRECTORY ${SECP256K1_INCLUDE_DIR})  # Must exist.
 set_property(TARGET Secp256k1 PROPERTY IMPORTED_LOCATION ${SECP256K1_LIBRARY})
 set_property(TARGET Secp256k1 PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${SECP256K1_INCLUDE_DIR})
-add_dependencies(Secp256k1 secp256k1)
 include_directories(${SECP256K1_INCLUDE_DIR})
 list(APPEND LIBRARIES ${SECP256K1_LIBRARY})
 list(APPEND DEPENDENCIES libsecp256k1)
@@ -105,7 +89,7 @@ list(APPEND DEPENDENCIES libsecp256k1)
 
 
 ########################################################################
-foreach(_target sample_client)
+foreach(_target sample_client main)
     add_executable(${_target} "${_target}.cc")
     target_link_libraries(${_target}
             dds_grpc_proto
@@ -115,7 +99,6 @@ foreach(_target sample_client)
     target_link_libraries(${_target} ${LIBRARIES})
     add_dependencies(${_target} ${DEPENDENCIES}) 
 endforeach()
-add_executable(ddssdk main.cpp)
 
 find_package(nlohmann_json REQUIRED)
 target_link_libraries(sample_client nlohmann_json::nlohmann_json)

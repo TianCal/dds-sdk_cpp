@@ -9,10 +9,9 @@
 #include <vector>
 #include <chrono>
 #include <tuple>
-
+#include <google/protobuf/message.h>
 #include <secp256k1.h>
 #include "nlohmann/json.hpp"
-
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include "base64urldecode.h"
@@ -24,6 +23,9 @@ using dds::Jwt;
 using dds::StorageEntry;
 using dds::StorageEntries;
 using dds::UserConsent;
+using dds::DDSInternalTaskIDList;
+using dds::SubscribeRequest;
+using dds::MQQueueName;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
@@ -196,6 +198,37 @@ void DDSClient::import_core_addr(std::string user_id, std::string core_addr)
     this->create_entry(key_name, core_addr_bytes, sizeof(core_addr));
 }
 
+std::string DDSClient::subscribe(std::string key_name, int64_t start_timestamp) 
+{
+    SubscribeRequest request;
+    request.set_key_name(key_name);
+    request.set_start_timestamp(start_timestamp);
+    MQQueueName response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->Subscribe(&context, request, &response);
+    if (status.ok())
+        return response.queue_name();
+    else
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+}
+
+/*DdsSubscriber DDSClient::new_subscriber(std::string queue_name)
+{
+    secp256k1_pubkey core_public_key;
+    std::string core_mq_uri;
+    std::tie(core_mq_uri, core_public_key) = this->request_core_info();
+    DdsSubscriber ret;
+    return ret;
+}
+
+DdsSubscriber::DdsSubscriber(std::string mq_uri, std::string queue_name){
+    AMQP::Address address(mq_uri);
+    AMQP::TcpConnection connection(&myHandler, address);
+
+}*/
+
 std::vector<std::string> split(const std::string &s, char delim)
 {
     std::stringstream ss(s);
@@ -298,44 +331,40 @@ secp256k1_pubkey generate_user(unsigned char *seckey)
     return user_public_key;
 }
 
+int64_t get_timestamp(std::string key_path) {
+    size_t pos = key_path.rfind('@');
+    std::string timestamp_str = key_path.substr(pos+1);
+    return strtoll(timestamp_str.c_str(), NULL, 10);
+}
+
 int main(int argc, char **argv)
 {
+    std::string protocol_name = "greetings";
     std::string server_address{"127.0.0.1:8027"};
     // std::string jwt = argv[1];
     std::string core_jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyX2lkIjoiX2FkbWluIiwiZXhwIjoxNjUxNzc0ODAyfQ.f6Bd-LQR57_EXdQtb6tyxDbKWalyCyNy51HEqKSYGDo";
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), core_jwt};
-    int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 * 31;
-    // int64_t expiration_timestamp = 1651537665 + 86400 * 31;
-    int num = 2;
-    std::string users[num];
-    for (int i = 0; i < num; i++)
-    {
-        secp256k1_pubkey core_public_key;
-        std::string core_mq_uri;
-        std::tie(core_mq_uri, core_public_key) = client.request_core_info();
-
-        unsigned char seckey[32];
-        secp256k1_pubkey user_public_key = generate_user(seckey);
-        std::int64_t signature_timestamp;
-        const unsigned char *serialized_signature;
-        std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_public_key, seckey, core_public_key, expiration_timestamp);
-        users[i] = client.import_user(user_public_key, signature_timestamp, expiration_timestamp, serialized_signature);
-    }
-
-    for (int i = 0; i < num; i++)
-    {
-        for (int j = 0; j < num; j++)
-        {
-            if (i != j)
-            {
-                DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), users[i]};
-                client.import_guest_jwt(users[j]);
-                JWT jwt = decode_jwt_without_validation(users[j]);
-                client.import_core_addr(jwt.user_id, server_address);
-            }
+    std::string list_key = "_dds_internal:protocols:" + protocol_name + ":waiting";
+    std::string latest_key = "_dds_internal:protocols:" + protocol_name + ":waiting:latest";
+    // Step 1: get the list of key_path which contains the timestamp.
+    StorageEntry read_key;
+    read_key.set_key_name(list_key);
+    std::vector<StorageEntry> read_keys{read_key};
+    std::vector<StorageEntry> res = client.read_entries(read_keys);
+    // Step 2: find the earliest timestamp in the list.
+    int64_t start_timestamp = UINT64_MAX;
+    StorageEntry list_entry = res[0];
+    DDSInternalTaskIDList list;
+    list.ParseFromString(list_entry.payload());
+    if (list.task_ids_with_key_paths_size() == 0) { 
+        start_timestamp = get_timestamp(list_entry.key_path());
+    } else {
+        for (StorageEntry currTask: res) {
+            start_timestamp = std::min(start_timestamp, get_timestamp(currTask.key_path()));
         }
     }
-    for (int i = 0; i < num; i++)
-        std::cout << users[i] << std::endl;
+    // Step 3: subscribe and get a queue_name.
+    std::string queue_name = client.subscribe(protocol_name, start_timestamp);
+    // Step 4: set up a subscriber with the queue_name.
     return 0;
 }

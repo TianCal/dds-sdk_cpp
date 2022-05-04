@@ -1,8 +1,10 @@
-#include <iostream>
 
-int main(int, char**) {
-    std::cout << "Hello, world!\n";
+int main()
+{
+    return 0;
 }
+
+
 /*int main(int argc, char **argv)
 {
     std::string server_address{"127.0.0.1:8080"};
