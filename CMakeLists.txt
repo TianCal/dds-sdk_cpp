@@ -76,6 +76,7 @@ ExternalProject_Add(libsecp256k1
 )
 add_library(Secp256k1 STATIC IMPORTED)
 set(SECP256K1_LIBRARY ${SECP256K1_ROOT}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}secp256k1${CMAKE_STATIC_LIBRARY_SUFFIX})
+
 set(SECP256K1_INCLUDE_DIR ${SECP256K1_ROOT}/include)
 file(MAKE_DIRECTORY ${SECP256K1_INCLUDE_DIR})  # Must exist.
 set_property(TARGET Secp256k1 PROPERTY IMPORTED_LOCATION ${SECP256K1_LIBRARY})
@@ -85,8 +86,22 @@ list(APPEND LIBRARIES ${SECP256K1_LIBRARY})
 list(APPEND DEPENDENCIES libsecp256k1)
 
 ########################################################################
-# Crypto++
-
+# https://github.com/alanxz/SimpleAmqpClient
+include(ExternalProject)
+ExternalProject_Add(SimpleAmqpClient
+    GIT_REPOSITORY https://github.com/alanxz/SimpleAmqpClient.git
+    CMAKE_ARGS -Wno-dev "-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>"
+    BUILD_COMMAND make
+    INSTALL_COMMAND sudo make install
+    INSTALL_DIR SimpleAmqpClient
+)
+ExternalProject_Get_Property(SimpleAmqpClient INSTALL_DIR)
+set(SimpleAmqpClient_LIBRARY ${INSTALL_DIR}/lib/libSimpleAmqpClient${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(SimpleAmqpClient_INCLUDE_DIR ${INSTALL_DIR}/include)
+file(MAKE_DIRECTORY ${SimpleAmqpClient_INCLUDE_DIR})  # Must exist.
+include_directories(${SimpleAmqpClient_INCLUDE_DIR})
+list(APPEND LIBRARIES ${SimpleAmqpClient_LIBRARY})
+list(APPEND DEPENDENCIES SimpleAmqpClient)
 
 ########################################################################
 foreach(_target sample_client main)
@@ -99,7 +114,7 @@ foreach(_target sample_client main)
     target_link_libraries(${_target} ${LIBRARIES})
     add_dependencies(${_target} ${DEPENDENCIES}) 
 endforeach()
-
+#include_directories(/usr/local/include)
 find_package(nlohmann_json REQUIRED)
 target_link_libraries(sample_client nlohmann_json::nlohmann_json)
 
