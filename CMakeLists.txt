@@ -88,17 +88,17 @@ list(APPEND DEPENDENCIES libsecp256k1)
 ########################################################################
 # https://github.com/alanxz/SimpleAmqpClient
 include(ExternalProject)
+set(SimpleAmqpClient_ROOT "${CMAKE_CURRENT_BINARY_DIR}/SimpleAmqpClient")
 ExternalProject_Add(SimpleAmqpClient
     GIT_REPOSITORY https://github.com/alanxz/SimpleAmqpClient.git
     CMAKE_ARGS  -Wno-dev 
-                -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/SimpleAmqpClient
+                -DCMAKE_INSTALL_PREFIX=${SimpleAmqpClient_ROOT}
                 -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
     BUILD_COMMAND make
     INSTALL_COMMAND make install
 )
-ExternalProject_Get_Property(SimpleAmqpClient INSTALL_DIR)
-set(SimpleAmqpClient_LIBRARY ${INSTALL_DIR}/lib/libSimpleAmqpClient${CMAKE_SHARED_LIBRARY_SUFFIX})
-set(SimpleAmqpClient_INCLUDE_DIR ${INSTALL_DIR}/include)
+set(SimpleAmqpClient_LIBRARY ${SimpleAmqpClient_ROOT}/lib/libSimpleAmqpClient${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(SimpleAmqpClient_INCLUDE_DIR ${SimpleAmqpClient_ROOT}/include)
 file(MAKE_DIRECTORY ${SimpleAmqpClient_INCLUDE_DIR})  # Must exist.
 include_directories(${SimpleAmqpClient_INCLUDE_DIR})
 list(APPEND LIBRARIES ${SimpleAmqpClient_LIBRARY})
