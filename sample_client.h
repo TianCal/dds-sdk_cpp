@@ -14,7 +14,7 @@
 #include <optional>
 #include <secp256k1.h>
 #include "json.hpp"
-
+#include <SimpleAmqpClient/SimpleAmqpClient.h>
 using dds::CoreInfo;
 using dds::DDS;
 using dds::Empty;
@@ -22,7 +22,6 @@ using dds::Jwt;
 using dds::StorageEntry;
 using dds::UserConsent;
 using dds::Participant;
-using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 struct JWT
@@ -32,14 +31,25 @@ struct JWT
     int64_t exp;
 };
 
-/* TODO: fix
 struct DdsSubscriber {
-    DdsSubscriber(std::string mq_uri, std::string queue_name);
-};*/
+    DdsSubscriber(std::string mq_uri, std::string queue_name){
+        this->connection = AmqpClient::Channel::Open(AmqpClient::Channel::OpenOpts::FromUri(mq_uri));
+        this->consumer_tag = this->connection->BasicConsume(queue_name, "");
+    }
+
+    std::string get_next() {
+        AmqpClient::Envelope::ptr_t envelope = connection->BasicConsumeMessage(consumer_tag);
+        connection->BasicAck(envelope);
+        return envelope.get()->Message()->Body();
+    }
+    
+    AmqpClient::Channel::ptr_t connection;
+    std::string consumer_tag;
+};
 class DDSClient
 {
 public:
-    DDSClient(std::shared_ptr<Channel> channel, std::string admin_jwt);
+    DDSClient(std::shared_ptr<grpc::Channel> channel, std::string admin_jwt);
     std::string import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature);
     std::string create_entry(std::string key_name, unsigned char *payload, size_t payload_size);
     std::string update_entry(std::string key_name, unsigned char *payload, size_t payload_size);
