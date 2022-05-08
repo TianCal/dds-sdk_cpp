@@ -1,4 +1,5 @@
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
+#include <iostream>
 using namespace AmqpClient;
 int main()
 {   
@@ -6,6 +7,7 @@ int main()
     std::string consumer_tag = connection->BasicConsume("hello", "");
     Envelope::ptr_t envelope = connection->BasicConsumeMessage(consumer_tag);
     // To ack:
+    std::cout << envelope.get()->Message()->Body() << std::endl;
     connection->BasicAck(envelope);
     return 0;
 }
