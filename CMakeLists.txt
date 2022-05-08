@@ -124,17 +124,6 @@ foreach(_target sample_client main)
     add_dependencies(${_target} ${DEPENDENCIES}) 
 endforeach()
 
-foreach(_target admin_import_user)
-    add_executable(${_target} "${_target}.cc")
-    target_link_libraries(${_target}
-            dds_grpc_proto
-            ${_PROTOBUF_LIBPROTOBUF}
-            ${_REFLECTION}
-            ${_GRPC_GRPCPP})
-    target_link_libraries(${_target} ${LIBRARIES})
-    add_dependencies(${_target} ${DEPENDENCIES}) 
-endforeach()
-
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
