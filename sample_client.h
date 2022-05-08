@@ -13,7 +13,7 @@
 #include <tuple>
 #include <optional>
 #include <secp256k1.h>
-#include "nlohmann/json.hpp"
+#include "json.hpp"
 
 using dds::CoreInfo;
 using dds::DDS;

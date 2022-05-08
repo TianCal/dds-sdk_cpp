@@ -11,7 +11,7 @@
 #include <tuple>
 #include <google/protobuf/message.h>
 #include <secp256k1.h>
-#include "nlohmann/json.hpp"
+#include "json.hpp"
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include "base64urldecode.h"
