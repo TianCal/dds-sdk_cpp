@@ -66,7 +66,7 @@ service DDS {
     // Send task status to MQ.
     // In request, task_id is required.
     // Require user JWT.
-    rpc ConfirmTask (Task) returns (Empty);
+    rpc ConfirmTask (ConfirmTaskRequest) returns (Empty);
 
     // A participant finishes a task.
     // Send task status to MQ.
@@ -202,12 +202,19 @@ message Task {
     string parent_task = 5;
     // Whether the task requires the signed decisions from all participants to start. If require_agreement=False, the task starts without confirming replies from others.
     bool require_agreement = 9;
-    // The list of signatures (align with participants).
+    // The list of decisions (align with participants).
     repeated Decision decisions = 6;
     // The status of this task.
     string status = 7;
     // The expiration time for waiting for others' decisions, in unix timestamp format.
     int64 expiration_time = 8;
+}
+
+message ConfirmTaskRequest{
+    // The id of this task.
+    string task_id = 1;
+    // The decision of this task.
+    Decision decision = 2;
 }
 
 message CoreInfo {

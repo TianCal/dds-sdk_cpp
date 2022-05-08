@@ -21,6 +21,7 @@ using dds::Empty;
 using dds::Jwt;
 using dds::StorageEntry;
 using dds::UserConsent;
+using dds::Participant;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
@@ -31,9 +32,10 @@ struct JWT
     int64_t exp;
 };
 
+/* TODO: fix
 struct DdsSubscriber {
     DdsSubscriber(std::string mq_uri, std::string queue_name);
-};
+};*/
 class DDSClient
 {
 public:
@@ -47,10 +49,17 @@ public:
     void import_core_addr(std::string user_id, std::string core_addr);
     std::tuple<std::string, secp256k1_pubkey> request_core_info();
     std::string subscribe(std::string key_name, int64_t start_timestamp);
-    DdsSubscriber new_subscriber(std::string queue_name);
+    // TODO: fix this DdsSubscriber new_subscriber(std::string queue_name); 
+    std::string refresh_token();
+    std::string refresh_token_with_expiration_time(int64_t expiration_time);
+    std::string run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement);
+    std::string run_task_with_expiration_time(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time);
+    void confirm_task(std::string task_id, bool is_approved, bool is_rejected, std::string reason);
+    void finish_task(std::string task_id);
 private:
     std::unique_ptr<DDS::Stub> _stub;
     std::string jwt;
+    std::string task_id;
 };
 
 std::vector<std::string> split(const std::string &s, char delim);

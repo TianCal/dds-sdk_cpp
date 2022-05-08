@@ -18,14 +18,19 @@
 #include "random.h"
 using dds::CoreInfo;
 using dds::DDS;
+using dds::DDSInternalTaskIDList;
 using dds::Empty;
 using dds::Jwt;
-using dds::StorageEntry;
-using dds::StorageEntries;
-using dds::UserConsent;
-using dds::DDSInternalTaskIDList;
-using dds::SubscribeRequest;
 using dds::MQQueueName;
+using dds::StorageEntries;
+using dds::StorageEntry;
+using dds::SubscribeRequest;
+using dds::UserConsent;
+using dds::RefreshTokenRequest;
+using dds::Participant;
+using dds::Task;
+using dds::ConfirmTaskRequest;
+using dds::Decision;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
@@ -77,6 +82,29 @@ std::string DDSClient::import_user(secp256k1_pubkey user_public_key, int64_t sig
         // return "bad";
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
+}
+
+std::string DDSClient::refresh_token() {
+    return this->refresh_token_with_expiration_time(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400);
+}
+
+std::string DDSClient::refresh_token_with_expiration_time(int64_t expiration_time)
+{
+    RefreshTokenRequest request;
+    request.set_expiration_time(expiration_time);
+    Jwt response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->RefreshToken(&context, request, &response);
+
+    if (status.ok()) {
+        this->jwt = response.jwt();
+        return response.jwt();
+    } else {
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
+
 }
 
 std::tuple<std::string, secp256k1_pubkey> DDSClient::request_core_info()
@@ -159,9 +187,9 @@ std::string DDSClient::delete_entry(std::string key_name)
 std::vector<StorageEntry> DDSClient::read_entries(std::vector<StorageEntry> entries)
 {
     StorageEntries request;
-    
-    for (int i = 0; i < entries.size(); i++){
-        StorageEntry* curr_entry = request.add_entries();
+    for (int i = 0; i < entries.size(); i++)
+    {
+        StorageEntry *curr_entry = request.add_entries();
         curr_entry->CopyFrom(entries[i]);
     }
     StorageEntries response;
@@ -169,12 +197,17 @@ std::vector<StorageEntry> DDSClient::read_entries(std::vector<StorageEntry> entr
     context.AddMetadata("authorization", this->jwt);
     Status status;
     status = _stub->ReadEntries(&context, request, &response);
-
-    std::vector<StorageEntry> ret;
-    for (int i = 0; i < response.entries_size(); i++) {
-        ret.push_back(response.entries(i));
+    if (status.ok()) {
+        std::vector<StorageEntry> ret;
+        for (int i = 0; i < response.entries_size(); i++)
+        {   
+            ret.push_back(response.entries(i));
+        }
+        return ret;
+    } else {
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
-    return ret;
+
 }
 
 void DDSClient::import_guest_jwt(std::string jwt)
@@ -198,7 +231,68 @@ void DDSClient::import_core_addr(std::string user_id, std::string core_addr)
     this->create_entry(key_name, core_addr_bytes, sizeof(core_addr));
 }
 
-std::string DDSClient::subscribe(std::string key_name, int64_t start_timestamp) 
+std::string DDSClient::run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement) {
+    int expiration_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400;
+    return this->run_task_with_expiration_time(protocol_name, protocol_param, protocol_param_size, participants, require_agreement, expiration_time);
+}
+
+std::string DDSClient::run_task_with_expiration_time(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time){
+    Task request;
+    for (int i = 0; i < participants.size(); i++)
+    {
+        Participant *curr_participant = request.add_participants();
+        curr_participant->CopyFrom(participants[i]);
+    }
+    request.set_protocol_name(protocol_name);
+    request.set_protocol_param(protocol_param, protocol_param_size);
+    request.set_require_agreement(require_agreement);
+    request.set_expiration_time(expiration_time);
+    request.set_parent_task(this->task_id);
+    Task response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->CreateTask(&context, request, &response);
+    if (status.ok()) {
+        return response.task_id();
+    } else {
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
+
+}
+
+void DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_rejected, std::string reason){
+    ConfirmTaskRequest request;
+    request.set_task_id(task_id);
+    Decision decision;
+    decision.set_is_approved(is_approved);
+    decision.set_is_rejected(is_rejected);
+    decision.set_reason(reason);
+    request.set_allocated_decision(&decision);
+    Empty response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->ConfirmTask(&context, request, &response);
+    if (!status.ok()) {
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
+}
+
+void DDSClient::finish_task(std::string task_id) {
+    Task request;
+    request.set_task_id(task_id);
+    Empty response;
+    ClientContext context;
+    context.AddMetadata("authorization", this->jwt);
+    Status status;
+    status = _stub->FinishTask(&context, request, &response);
+    if (!status.ok()) {
+        throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
+}
+
+std::string DDSClient::subscribe(std::string key_name, int64_t start_timestamp)
 {
     SubscribeRequest request;
     request.set_key_name(key_name);
@@ -331,9 +425,10 @@ secp256k1_pubkey generate_user(unsigned char *seckey)
     return user_public_key;
 }
 
-int64_t get_timestamp(std::string key_path) {
+int64_t get_timestamp(std::string key_path)
+{
     size_t pos = key_path.rfind('@');
-    std::string timestamp_str = key_path.substr(pos+1);
+    std::string timestamp_str = key_path.substr(pos + 1);
     return strtoll(timestamp_str.c_str(), NULL, 10);
 }
 
@@ -356,10 +451,14 @@ int main(int argc, char **argv)
     StorageEntry list_entry = res[0];
     DDSInternalTaskIDList list;
     list.ParseFromString(list_entry.payload());
-    if (list.task_ids_with_key_paths_size() == 0) { 
+    if (list.task_ids_with_key_paths_size() == 0)
+    {
         start_timestamp = get_timestamp(list_entry.key_path());
-    } else {
-        for (StorageEntry currTask: res) {
+    }
+    else
+    {
+        for (StorageEntry currTask : res)
+        {
             start_timestamp = std::min(start_timestamp, get_timestamp(currTask.key_path()));
         }
     }
