@@ -1,7 +1,4 @@
 {
-    "cmake.configureArgs": [
-        "-DCMAKE_TOOLCHAIN_FILE=/home/li/song/vcpkg/scripts/buildsystems/vcpkg.cmake"
-    ],
     "files.associations": {
         "string": "cpp",
         "cctype": "cpp",
@@ -70,6 +67,8 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "any": "cpp",
+        "cfenv": "cpp"
     }
 }

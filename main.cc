@@ -3,7 +3,7 @@ using namespace AmqpClient;
 int main()
 {   
     AmqpClient::Channel::ptr_t connection = AmqpClient::Channel::Open(Channel::OpenOpts::FromUri("amqp://cpp-test:cpp-test@localhost:5672/cpp-test"));
-    std::string consumer_tag = connection->BasicConsume("cpp-test", "");
+    std::string consumer_tag = connection->BasicConsume("hello", "");
     Envelope::ptr_t envelope = connection->BasicConsumeMessage(consumer_tag);
     // To ack:
     connection->BasicAck(envelope);

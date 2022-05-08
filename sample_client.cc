@@ -79,7 +79,6 @@ std::string DDSClient::import_user(secp256k1_pubkey user_public_key, int64_t sig
     }
     else
     {
-        // return "bad";
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
 }
@@ -432,7 +431,7 @@ int64_t get_timestamp(std::string key_path)
     return strtoll(timestamp_str.c_str(), NULL, 10);
 }
 
-int main(int argc, char **argv)
+/*int main(int argc, char **argv)
 {
     std::string protocol_name = "greetings";
     std::string server_address{"127.0.0.1:8027"};
@@ -466,4 +465,4 @@ int main(int argc, char **argv)
     std::string queue_name = client.subscribe(protocol_name, start_timestamp);
     // Step 4: set up a subscriber with the queue_name.
     return 0;
-}
+}*/

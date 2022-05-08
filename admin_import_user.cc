@@ -1,14 +1,19 @@
 #include <secp256k1.h>
 #include <grpc++/grpc++.h>
 #include "sample_client.h"
+
 int main(int argc, char **argv)
 {
-    std::string server_address{"127.0.0.1:8027"};
-    std::string jwt = argv[1];
+    using std::string;
+    using std::chrono::duration_cast;
+    using std::chrono::system_clock;
+    string server_address{"127.0.0.1:8027"};
+    string jwt = argv[1];
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
-    int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 *31;
+    //TODO: turn to a utility function
+    int64_t expiration_timestamp = duration_cast<std::chrono::seconds>(system_clock::now().time_since_epoch()).count() + 86400 *31;
     secp256k1_pubkey core_public_key;
-    std::string core_mq_uri;
+    string core_mq_uri;
     std::tie(core_mq_uri, core_public_key) = client.request_core_info();
 
     unsigned char seckey[32];
