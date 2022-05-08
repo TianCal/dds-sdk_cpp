@@ -109,6 +109,10 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 ########################################################################
+find_package(nlohmann_json REQUIRED)
+list(APPEND LIBRARIES nlohmann_json::nlohmann_json)
+
+########################################################################
 foreach(_target sample_client main)
     add_executable(${_target} "${_target}.cc")
     target_link_libraries(${_target}
@@ -119,9 +123,6 @@ foreach(_target sample_client main)
     target_link_libraries(${_target} ${LIBRARIES})
     add_dependencies(${_target} ${DEPENDENCIES}) 
 endforeach()
-#include_directories(/usr/local/include)
-find_package(nlohmann_json REQUIRED)
-target_link_libraries(sample_client nlohmann_json::nlohmann_json)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
