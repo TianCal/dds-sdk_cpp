@@ -11,11 +11,11 @@
 #include <tuple>
 #include <google/protobuf/message.h>
 #include <secp256k1.h>
-#include "json.hpp"
 #include <openssl/sha.h>
 #include <openssl/evp.h>
-#include "base64urldecode.h"
-#include "random.h"
+#include "thirdparty/json.hpp"
+#include "thirdparty/base64urldecode.h"
+#include "thirdparty/random.h"
 using dds::CoreInfo;
 using dds::DDS;
 using dds::DDSInternalTaskIDList;
@@ -415,43 +415,6 @@ int64_t get_timestamp(std::string key_path)
     int64_t timestamp = strtoll(timestamp_str.c_str(), NULL, 10);
     return timestamp;
 }
-
-int main(int argc, char **argv)
-{
-    std::string server_address = argv[1];
-    std::string core_jwt = argv[2];
-    int num = std::stoi(argv[3]);
-    DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), core_jwt};
-    int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 * 31;
-    std::string users[num];
-    for (int i = 0; i < num; i++)
-    {
-        secp256k1_pubkey core_public_key;
-        std::string core_mq_uri;
-        std::tie(core_mq_uri, core_public_key) = client.request_core_info();
-
-        unsigned char seckey[32];
-        secp256k1_pubkey user_public_key = generate_user(seckey);
-        std::int64_t signature_timestamp;
-        const unsigned char *serialized_signature;
-        std::tie(signature_timestamp, serialized_signature) = prepare_import_user_signature(user_public_key, seckey, core_public_key, expiration_timestamp);
-        users[i] = client.import_user(user_public_key, signature_timestamp, expiration_timestamp, serialized_signature);
-    }
-
-    for (int i = 0; i < num; i++)
-    {
-        for (int j = 0; j < num; j++)
-        {
-            if (i != j)
-            {
-                DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), users[i]};
-                client.import_guest_jwt(users[j]);
-                JWT jwt = decode_jwt_without_validation(users[j]);
-                client.import_core_addr(jwt.user_id, server_address);
-            }
-        }
-    }
-    for (int i = 0; i < num; i++)
-        std::cout << users[i] << std::endl;
-    return 0;
+int64_t generate_expiration_timestamp(int64_t seconds_from_now) {
+    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + seconds_from_now;
 }

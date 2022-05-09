@@ -13,7 +13,7 @@
 #include <tuple>
 #include <optional>
 #include <secp256k1.h>
-#include "json.hpp"
+#include "thirdparty/json.hpp"
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
 using dds::CoreInfo;
 using dds::DDS;
@@ -77,5 +77,5 @@ auto DecodeBase64(const std::string &to_decode) -> std::string;
 JWT decode_jwt_without_validation(std::string jwt);
 std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp);
 secp256k1_pubkey generate_user(unsigned char *seckey);
-
+int64_t generate_expiration_timestamp(int64_t seconds_from_now);
 #endif

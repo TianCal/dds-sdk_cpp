@@ -1,6 +1,8 @@
 #include <string>
 #include <vector>
 
+// Source: https://stackoverflow.com/questions/180947/base64-decode-snippet-in-c
+
 /*
 Base64 translates 24 bits into 4 ASCII characters at a time. First,
 3 8-bit bytes are treated as 4 6-bit groups. Those 4 groups are

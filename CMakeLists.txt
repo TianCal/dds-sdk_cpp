@@ -109,8 +109,9 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 ########################################################################
-foreach(_target main sample_client) #sample_client
-    add_executable(${_target} "${_target}.cc")
+
+foreach(_target admin_import_user admin_import_users_and_exchange_guest_jwts) #sample_client
+    add_executable(${_target} "examples/${_target}.cc" "sample_client.cc")
     target_link_libraries(${_target}
             dds_grpc_proto
             ${_PROTOBUF_LIBPROTOBUF}
@@ -119,16 +120,6 @@ foreach(_target main sample_client) #sample_client
     target_link_libraries(${_target} ${LIBRARIES})
     add_dependencies(${_target} ${DEPENDENCIES}) 
 endforeach()
-
-#add_executable(admin_import_user "admin_import_user.cc" "sample_client.cc")
-#target_link_libraries(admin_import_user
-#    dds_grpc_proto
- #   ${_PROTOBUF_LIBPROTOBUF}
- #   ${_REFLECTION}
- #   ${_GRPC_GRPCPP})
-#target_link_libraries(admin_import_user ${LIBRARIES})
-#add_dependencies(admin_import_user  ${DEPENDENCIES}) 
-
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
