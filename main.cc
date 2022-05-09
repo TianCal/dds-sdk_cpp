@@ -3,12 +3,6 @@
 using namespace AmqpClient;
 int main()
 {   
-    AmqpClient::Channel::ptr_t connection = AmqpClient::Channel::Open(Channel::OpenOpts::FromUri("amqp://cpp-test:cpp-test@localhost:5672/cpp-test"));
-    std::string consumer_tag = connection->BasicConsume("hello", "");
-    Envelope::ptr_t envelope = connection->BasicConsumeMessage(consumer_tag);
-    // To ack:
-    std::cout << envelope.get()->Message()->Body() << std::endl;
-    connection->BasicAck(envelope);
     return 0;
 }
 
@@ -29,12 +23,10 @@ int main()
 
 int main(int argc, char **argv)
 {
-    std::string server_address{"127.0.0.1:8027"};
-    // std::string jwt = argv[1];
-    std::string jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyX2lkIjoiX2FkbWluIiwiZXhwIjoxNjUxNzE1Njg3fQ.pakDhL__f6LTqM2cLna5E0Wsv7sFzU_UG8VgY_Z1UPI";
+    std::string server_address = argv[1];
+    std::string jwt = argv[2];
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
-    //int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 *31;
-    int64_t expiration_timestamp = 1651537665 + 86400 *31;
+    int64_t expiration_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400 *31;
     secp256k1_pubkey core_public_key;
     std::string core_mq_uri;
     std::tie(core_mq_uri, core_public_key) = client.request_core_info();

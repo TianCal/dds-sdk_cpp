@@ -31,6 +31,8 @@ using dds::Participant;
 using dds::Task;
 using dds::ConfirmTaskRequest;
 using dds::Decision;
+using dds::SubscriptionMessage;
+using dds::DDSInternalTaskIDWithKeyPath;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
@@ -261,18 +263,19 @@ std::string DDSClient::run_task_with_expiration_time(std::string protocol_name, 
 }
 
 void DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_rejected, std::string reason){
-    ConfirmTaskRequest request;
-    request.set_task_id(task_id);
     Decision decision;
     decision.set_is_approved(is_approved);
     decision.set_is_rejected(is_rejected);
     decision.set_reason(reason);
+    ConfirmTaskRequest request;
+    request.set_task_id(task_id);
     request.set_allocated_decision(&decision);
     Empty response;
     ClientContext context;
     context.AddMetadata("authorization", this->jwt);
     Status status;
     status = _stub->ConfirmTask(&context, request, &response);
+    request.release_decision();
     if (!status.ok()) {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
@@ -307,20 +310,14 @@ std::string DDSClient::subscribe(std::string key_name, int64_t start_timestamp)
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
 }
 
-/*DdsSubscriber DDSClient::new_subscriber(std::string queue_name)
+DdsSubscriber DDSClient::new_subscriber(std::string queue_name)
 {
-    secp256k1_pubkey core_public_key;
+    secp256k1_pubkey _;
     std::string core_mq_uri;
-    std::tie(core_mq_uri, core_public_key) = this->request_core_info();
-    DdsSubscriber ret;
-    return ret;
+    std::tie(core_mq_uri, _) = this->request_core_info();
+    DdsSubscriber subscriber{core_mq_uri, queue_name};
+    return subscriber;
 }
-
-DdsSubscriber::DdsSubscriber(std::string mq_uri, std::string queue_name){
-    AMQP::Address address(mq_uri);
-    AMQP::TcpConnection connection(&myHandler, address);
-
-}*/
 
 std::vector<std::string> split(const std::string &s, char delim)
 {
@@ -333,19 +330,6 @@ std::vector<std::string> split(const std::string &s, char delim)
         // elems.push_back(std::move(item)); // if C++11 (based on comment from @mchiasson)
     }
     return elems;
-}
-
-auto DecodeBase64(const std::string &to_decode) -> std::string
-{
-    const auto predicted_len = 3 * to_decode.length() / 4; // predict output size
-    const auto output_buffer{std::make_unique<char[]>(predicted_len + 1)};
-    const std::vector<unsigned char> vec_chars{to_decode.begin(), to_decode.end()}; // convert to_decode into uchar container
-    const auto output_len = EVP_DecodeBlock(reinterpret_cast<unsigned char *>(output_buffer.get()), vec_chars.data(), static_cast<int>(vec_chars.size()));
-    if (predicted_len != static_cast<unsigned long>(output_len))
-    {
-        throw std::runtime_error("DecodeBase64 error");
-    }
-    return output_buffer.get();
 }
 
 JWT decode_jwt_without_validation(std::string jwt)
@@ -428,16 +412,17 @@ int64_t get_timestamp(std::string key_path)
 {
     size_t pos = key_path.rfind('@');
     std::string timestamp_str = key_path.substr(pos + 1);
-    return strtoll(timestamp_str.c_str(), NULL, 10);
+    int64_t timestamp = strtoll(timestamp_str.c_str(), NULL, 10);
+    return timestamp;
 }
 
-/*int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     std::string protocol_name = "greetings";
-    std::string server_address{"127.0.0.1:8027"};
-    // std::string jwt = argv[1];
-    std::string core_jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyX2lkIjoiX2FkbWluIiwiZXhwIjoxNjUxNzc0ODAyfQ.f6Bd-LQR57_EXdQtb6tyxDbKWalyCyNy51HEqKSYGDo";
-    DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), core_jwt};
+    std::string server_address{"127.0.0.1:8080"};
+    std::string jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoidXNlciIsInVzZXJfaWQiOiJBa2NPU2x5Z0VhSlZWclZkbTlpYmQwUEhpRGhZWkUwOUUza21UQk1Mbk9qdyIsImV4cCI6MTY1NDc1NDUzNX0.V4qpRdW5K8ajPy1pwvlrBJYOYZuqbMTABCfSCOBDyc4";//argv[1];
+    //std::string core_jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VyX2lkIjoiX2FkbWluIiwiZXhwIjoxNjUxNzc0ODAyfQ.f6Bd-LQR57_EXdQtb6tyxDbKWalyCyNy51HEqKSYGDo";
+    DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
     std::string list_key = "_dds_internal:protocols:" + protocol_name + ":waiting";
     std::string latest_key = "_dds_internal:protocols:" + protocol_name + ":waiting:latest";
     // Step 1: get the list of key_path which contains the timestamp.
@@ -446,7 +431,7 @@ int64_t get_timestamp(std::string key_path)
     std::vector<StorageEntry> read_keys{read_key};
     std::vector<StorageEntry> res = client.read_entries(read_keys);
     // Step 2: find the earliest timestamp in the list.
-    int64_t start_timestamp = UINT64_MAX;
+    int64_t start_timestamp = INT64_MAX;
     StorageEntry list_entry = res[0];
     DDSInternalTaskIDList list;
     list.ParseFromString(list_entry.payload());
@@ -456,13 +441,38 @@ int64_t get_timestamp(std::string key_path)
     }
     else
     {
-        for (StorageEntry currTask : res)
+        for (DDSInternalTaskIDWithKeyPath currTask : list.task_ids_with_key_paths())
         {
             start_timestamp = std::min(start_timestamp, get_timestamp(currTask.key_path()));
         }
     }
     // Step 3: subscribe and get a queue_name.
-    std::string queue_name = client.subscribe(protocol_name, start_timestamp);
+    std::string queue_name = client.subscribe(latest_key, start_timestamp);
     // Step 4: set up a subscriber with the queue_name.
+    DdsSubscriber subscriber = client.new_subscriber(queue_name);
+    while (1)
+    {
+        // Step 5: process subscription message.
+        std::string data = subscriber.get_next();
+        SubscriptionMessage message;
+        message.ParseFromString(data); 
+        // Step 5.1: match the change_type.
+        if (message.change_type() != "delete") {
+            Task task_id;
+            task_id.ParseFromString(message.payload());
+            StorageEntry read_key;
+            read_key.set_key_name("_dds_internal:tasks:" + task_id.task_id());
+            std::vector<StorageEntry> read_keys{read_key};
+            std::vector<StorageEntry> res = client.read_entries(read_keys);
+            StorageEntry task_entry = res[0];
+            Task task;
+            task.ParseFromString(task_entry.payload());
+            // IMPORTANT: Step 5.2: you must check the status of the task received from the subscription.
+            if (task.status() == "waiting")
+            {
+                client.confirm_task(task_id.task_id(), true, false, "");
+            }
+        }
+    }
     return 0;
-}*/
+}

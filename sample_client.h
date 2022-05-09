@@ -34,7 +34,7 @@ struct JWT
 struct DdsSubscriber {
     DdsSubscriber(std::string mq_uri, std::string queue_name){
         this->connection = AmqpClient::Channel::Open(AmqpClient::Channel::OpenOpts::FromUri(mq_uri));
-        this->consumer_tag = this->connection->BasicConsume(queue_name, "");
+        this->consumer_tag = this->connection->BasicConsume(queue_name, "", true, false);
     }
 
     std::string get_next() {
@@ -42,7 +42,7 @@ struct DdsSubscriber {
         connection->BasicAck(envelope);
         return envelope.get()->Message()->Body();
     }
-    
+
     AmqpClient::Channel::ptr_t connection;
     std::string consumer_tag;
 };
@@ -59,7 +59,7 @@ public:
     void import_core_addr(std::string user_id, std::string core_addr);
     std::tuple<std::string, secp256k1_pubkey> request_core_info();
     std::string subscribe(std::string key_name, int64_t start_timestamp);
-    // TODO: fix this DdsSubscriber new_subscriber(std::string queue_name); 
+    DdsSubscriber new_subscriber(std::string queue_name); 
     std::string refresh_token();
     std::string refresh_token_with_expiration_time(int64_t expiration_time);
     std::string run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement);
