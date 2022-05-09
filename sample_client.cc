@@ -408,13 +408,6 @@ secp256k1_pubkey generate_user(unsigned char *seckey)
     return user_public_key;
 }
 
-int64_t get_timestamp(std::string key_path)
-{
-    size_t pos = key_path.rfind('@');
-    std::string timestamp_str = key_path.substr(pos + 1);
-    int64_t timestamp = strtoll(timestamp_str.c_str(), NULL, 10);
-    return timestamp;
-}
 int64_t generate_expiration_timestamp(int64_t seconds_from_now) {
     return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + seconds_from_now;
 }
