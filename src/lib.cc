@@ -1,19 +1,8 @@
 #include "lib.h"
 #include "dds.grpc.pb.h"
-#include <grpc++/grpc++.h>
-#include <memory>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <string>
-#include <vector>
-#include <chrono>
-#include <tuple>
 #include <google/protobuf/message.h>
-#include <secp256k1.h>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
-#include "json.hpp"
 #include "base64urldecode.h"
 #include "random.h"
 using namespace dds;

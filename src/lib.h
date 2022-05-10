@@ -3,15 +3,12 @@
 
 #include "dds.grpc.pb.h"
 #include <grpc++/grpc++.h>
-#include <memory>
 #include <iostream>
 #include <sstream>
-#include <iomanip>
 #include <string>
 #include <vector>
 #include <chrono>
 #include <tuple>
-#include <optional>
 #include <secp256k1.h>
 #include "json.hpp"
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
