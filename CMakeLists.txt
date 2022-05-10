@@ -110,7 +110,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 ########################################################################
 
-foreach(_target admin_import_user admin_import_users_and_exchange_guest_jwts auto_confirm request_core_info user_run_task user_refresh_token user_confirm_task) #sample_client
+foreach(_target admin_import_user admin_import_users_and_exchange_guest_jwts auto_confirm request_core_info user_run_task user_refresh_token user_confirm_task user_import_guest_jwt get_next_greeting_message) #sample_client
     add_executable(${_target} "examples/${_target}.cc" "sample_client.cc")
     target_link_libraries(${_target}
             dds_grpc_proto
