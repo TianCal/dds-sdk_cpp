@@ -98,17 +98,13 @@ std::string DDSClient::refresh_token_with_expiration_time(int64_t expiration_tim
 
 std::tuple<std::string, secp256k1_pubkey> DDSClient::request_core_info()
 {
-    // Request(Empty)
     Empty request;
-
-    // Send req
     CoreInfo response;
     ClientContext context;
     context.AddMetadata("authorization", this->jwt);
     Status status;
     status = _stub->RequestCoreInfo(&context, request, &response);
 
-    // Handle response
     if (status.ok())
     {
         secp256k1_pubkey core_public_key;
@@ -137,9 +133,13 @@ std::string DDSClient::create_entry(std::string key_name, unsigned char *payload
     Status status;
     status = _stub->CreateEntry(&context, request, &response);
     if (status.ok())
+    {
         return response.key_path();
+    }
     else
+    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
 }
 
 std::string DDSClient::update_entry(std::string key_name, unsigned char *payload, size_t payload_size)
@@ -153,9 +153,13 @@ std::string DDSClient::update_entry(std::string key_name, unsigned char *payload
     Status status;
     status = _stub->UpdateEntry(&context, request, &response);
     if (status.ok())
+    {
         return response.key_path();
+    }
     else
+    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
 }
 
 std::string DDSClient::delete_entry(std::string key_name)
@@ -168,9 +172,13 @@ std::string DDSClient::delete_entry(std::string key_name)
     Status status;
     status = _stub->DeleteEntry(&context, request, &response);
     if (status.ok())
+    {
         return response.key_path();
+    }
     else
+    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
 }
 
 std::vector<StorageEntry> DDSClient::read_entries(std::vector<StorageEntry> entries)
@@ -303,9 +311,13 @@ std::string DDSClient::subscribe(std::string key_name, int64_t start_timestamp)
     Status status;
     status = _stub->Subscribe(&context, request, &response);
     if (status.ok())
+    {
         return response.queue_name();
+    }
     else
+    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
+    }
 }
 
 DdsSubscriber DDSClient::new_subscriber(std::string queue_name)
@@ -325,7 +337,6 @@ std::vector<std::string> split(const std::string &s, char delim)
     while (std::getline(ss, item, delim))
     {
         elems.push_back(item);
-        // elems.push_back(std::move(item)); // if C++11 (based on comment from @mchiasson)
     }
     return elems;
 }
@@ -334,17 +345,14 @@ JWT decode_jwt_without_validation(std::string jwt)
 {
     std::vector<std::string> splitted_jwt = split(jwt, '.');
     std::string decoded = base64_decode(splitted_jwt[1]);
-    // std::cout << decoded <<std::endl;
     nlohmann::json json_JWT = nlohmann::json::parse(decoded);
     JWT structed_JWT = json_JWT.get<JWT>();
-    // std::cout << structed_JWT.user_id << std::endl;
     return structed_JWT;
 }
 
 std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp)
 {
     int64_t signature_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    // int64_t signature_timestamp = 1651537665;
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
     unsigned char compressed_core_pubkey[33];
     unsigned char compressed_user_pubkey[33];
@@ -375,7 +383,6 @@ std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256
     memcpy(msg + sizeof(compressed_user_pubkey) + sizeof(signature_time_stamp_bytes) + sizeof(expiration_time_stamp_bytes), compressed_core_pubkey, sizeof(compressed_core_pubkey));
     unsigned char msg_hash[SHA256_DIGEST_LENGTH];
     SHA256(msg, sizeof(msg), msg_hash);
-    // std::cout << msg_hash;
     secp256k1_ecdsa_signature sig;
     if (!secp256k1_ecdsa_sign(ctx, &sig, msg_hash, user_sec_key, NULL, NULL))
     {
@@ -402,7 +409,9 @@ secp256k1_pubkey generate_user(unsigned char *seckey)
         }
     }
     if (!secp256k1_ec_pubkey_create(ctx, &user_public_key, seckey))
+    {
         throw std::invalid_argument("Cannot create publickey");
+    }
     return user_public_key;
 }
 
