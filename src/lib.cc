@@ -278,7 +278,7 @@ void DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_reje
     context.AddMetadata("authorization", this->jwt);
     Status status;
     status = _stub->ConfirmTask(&context, request, &response);
-    request.release_decision();
+    Decision* to_release = request.release_decision();
     if (!status.ok())
     {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
