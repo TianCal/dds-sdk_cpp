@@ -13,7 +13,7 @@
 #include <tuple>
 #include <optional>
 #include <secp256k1.h>
-#include "thirdparty/json.hpp"
+#include "json.hpp"
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
 using dds::CoreInfo;
 using dds::DDS;

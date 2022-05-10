@@ -1,6 +1,6 @@
 #include <secp256k1.h>
 #include <grpc++/grpc++.h>
-#include "../lib.h"
+#include "lib.h"
 #include <chrono>
 int main(int argc, char **argv)
 {

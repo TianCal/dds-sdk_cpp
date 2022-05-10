@@ -13,9 +13,9 @@
 #include <secp256k1.h>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
-#include "thirdparty/json.hpp"
-#include "thirdparty/base64urldecode.h"
-#include "thirdparty/random.h"
+#include "json.hpp"
+#include "base64urldecode.h"
+#include "random.h"
 using dds::CoreInfo;
 using dds::DDS;
 using dds::DDSInternalTaskIDList;

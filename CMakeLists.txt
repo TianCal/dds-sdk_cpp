@@ -110,8 +110,10 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 ########################################################################
 
+include_directories(src)
+include_directories(thirdparty)
 foreach(_target admin_import_user admin_import_users_and_exchange_guest_jwts auto_confirm request_core_info user_run_task user_refresh_token user_confirm_task user_import_guest_jwt get_next_greeting_message user_run_local_task user_greetings_to_multiple_user)
-    add_executable(${_target} "examples/${_target}.cc" "lib.cc")
+    add_executable(${_target} "examples/${_target}.cc" "src/lib.cc")
     target_link_libraries(${_target}
             dds_grpc_proto
             ${_PROTOBUF_LIBPROTOBUF}
