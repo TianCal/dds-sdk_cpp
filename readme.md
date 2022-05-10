@@ -9,5 +9,4 @@ mkdir build
 pushd build
 cmake ..
 make -j
-# To run the sample to test: ./sample_client
 ```

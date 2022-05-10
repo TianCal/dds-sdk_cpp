@@ -1,5 +1,5 @@
-#ifndef SAMPLE_CLIENT_H
-#define SAMPLE_CLIENT_H
+#ifndef LIB_H
+#define LIB_H
 
 #include "dds.grpc.pb.h"
 #include <grpc++/grpc++.h>

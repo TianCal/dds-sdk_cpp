@@ -1,4 +1,4 @@
-#include "sample_client.h"
+#include "lib.h"
 #include "dds.grpc.pb.h"
 #include <grpc++/grpc++.h>
 #include <memory>

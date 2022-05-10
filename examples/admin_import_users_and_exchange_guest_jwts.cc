@@ -1,6 +1,6 @@
 #include <secp256k1.h>
 #include <grpc++/grpc++.h>
-#include "../sample_client.h"
+#include "../lib.h"
 
 int main(int argc, char **argv)
 {

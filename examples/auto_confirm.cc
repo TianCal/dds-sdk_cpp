@@ -1,5 +1,5 @@
 #include <grpc++/grpc++.h>
-#include "../sample_client.h"
+#include "../lib.h"
 
 int64_t get_timestamp(std::string key_path)
 {
