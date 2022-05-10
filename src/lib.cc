@@ -16,23 +16,7 @@
 #include "json.hpp"
 #include "base64urldecode.h"
 #include "random.h"
-using dds::ConfirmTaskRequest;
-using dds::CoreInfo;
-using dds::DDS;
-using dds::DDSInternalTaskIDList;
-using dds::DDSInternalTaskIDWithKeyPath;
-using dds::Decision;
-using dds::Empty;
-using dds::Jwt;
-using dds::MQQueueName;
-using dds::Participant;
-using dds::RefreshTokenRequest;
-using dds::StorageEntries;
-using dds::StorageEntry;
-using dds::SubscribeRequest;
-using dds::SubscriptionMessage;
-using dds::Task;
-using dds::UserConsent;
+using namespace dds;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;

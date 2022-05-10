@@ -15,13 +15,7 @@
 #include <secp256k1.h>
 #include "json.hpp"
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
-using dds::CoreInfo;
-using dds::DDS;
-using dds::Empty;
-using dds::Jwt;
-using dds::StorageEntry;
-using dds::UserConsent;
-using dds::Participant;
+using namespace dds;
 using grpc::ClientContext;
 using grpc::Status;
 struct JWT

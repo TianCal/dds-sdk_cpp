@@ -1,11 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(ddssdk VERSION 0.1.0)
 
-include(CTest)
-enable_testing()
-
 find_package(Threads)
-
 set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(Protobuf CONFIG REQUIRED)
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
