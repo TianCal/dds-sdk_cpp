@@ -16,23 +16,23 @@
 #include "json.hpp"
 #include "base64urldecode.h"
 #include "random.h"
+using dds::ConfirmTaskRequest;
 using dds::CoreInfo;
 using dds::DDS;
 using dds::DDSInternalTaskIDList;
+using dds::DDSInternalTaskIDWithKeyPath;
+using dds::Decision;
 using dds::Empty;
 using dds::Jwt;
 using dds::MQQueueName;
+using dds::Participant;
+using dds::RefreshTokenRequest;
 using dds::StorageEntries;
 using dds::StorageEntry;
 using dds::SubscribeRequest;
-using dds::UserConsent;
-using dds::RefreshTokenRequest;
-using dds::Participant;
-using dds::Task;
-using dds::ConfirmTaskRequest;
-using dds::Decision;
 using dds::SubscriptionMessage;
-using dds::DDSInternalTaskIDWithKeyPath;
+using dds::Task;
+using dds::UserConsent;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
@@ -41,6 +41,7 @@ void to_json(nlohmann::json &j, const JWT &value)
 {
     j = nlohmann::json{{"role", value.role}, {"user_id", value.user_id}, {"exp", value.exp}};
 }
+
 void from_json(const nlohmann::json &j, JWT &value)
 {
     j.at("role").get_to(value.role);
@@ -85,7 +86,8 @@ std::string DDSClient::import_user(secp256k1_pubkey user_public_key, int64_t sig
     }
 }
 
-std::string DDSClient::refresh_token() {
+std::string DDSClient::refresh_token()
+{
     return this->refresh_token_with_expiration_time(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400);
 }
 
@@ -99,13 +101,15 @@ std::string DDSClient::refresh_token_with_expiration_time(int64_t expiration_tim
     Status status;
     status = _stub->RefreshToken(&context, request, &response);
 
-    if (status.ok()) {
+    if (status.ok())
+    {
         this->jwt = response.jwt();
         return response.jwt();
-    } else {
+    }
+    else
+    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
-
 }
 
 std::tuple<std::string, secp256k1_pubkey> DDSClient::request_core_info()
@@ -198,17 +202,19 @@ std::vector<StorageEntry> DDSClient::read_entries(std::vector<StorageEntry> entr
     context.AddMetadata("authorization", this->jwt);
     Status status;
     status = _stub->ReadEntries(&context, request, &response);
-    if (status.ok()) {
+    if (status.ok())
+    {
         std::vector<StorageEntry> ret;
         for (int i = 0; i < response.entries_size(); i++)
-        {   
+        {
             ret.push_back(response.entries(i));
         }
         return ret;
-    } else {
+    }
+    else
+    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
-
 }
 
 void DDSClient::import_guest_jwt(std::string jwt)
@@ -232,12 +238,14 @@ void DDSClient::import_core_addr(std::string user_id, std::string core_addr)
     this->create_entry(key_name, core_addr_bytes, sizeof(core_addr));
 }
 
-std::string DDSClient::run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement) {
+std::string DDSClient::run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement)
+{
     int expiration_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400;
     return this->run_task_with_expiration_time(protocol_name, protocol_param, protocol_param_size, participants, require_agreement, expiration_time);
 }
 
-std::string DDSClient::run_task_with_expiration_time(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time){
+std::string DDSClient::run_task_with_expiration_time(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time)
+{
     Task request;
     for (int i = 0; i < participants.size(); i++)
     {
@@ -254,15 +262,18 @@ std::string DDSClient::run_task_with_expiration_time(std::string protocol_name, 
     context.AddMetadata("authorization", this->jwt);
     Status status;
     status = _stub->CreateTask(&context, request, &response);
-    if (status.ok()) {
+    if (status.ok())
+    {
         return response.task_id();
-    } else {
+    }
+    else
+    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
-
 }
 
-void DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_rejected, std::string reason){
+void DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_rejected, std::string reason)
+{
     Decision decision;
     decision.set_is_approved(is_approved);
     decision.set_is_rejected(is_rejected);
@@ -276,12 +287,14 @@ void DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_reje
     Status status;
     status = _stub->ConfirmTask(&context, request, &response);
     request.release_decision();
-    if (!status.ok()) {
+    if (!status.ok())
+    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
 }
 
-void DDSClient::finish_task(std::string task_id) {
+void DDSClient::finish_task(std::string task_id)
+{
     Task request;
     request.set_task_id(task_id);
     Empty response;
@@ -289,7 +302,8 @@ void DDSClient::finish_task(std::string task_id) {
     context.AddMetadata("authorization", this->jwt);
     Status status;
     status = _stub->FinishTask(&context, request, &response);
-    if (!status.ok()) {
+    if (!status.ok())
+    {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
     }
 }
@@ -408,6 +422,7 @@ secp256k1_pubkey generate_user(unsigned char *seckey)
     return user_public_key;
 }
 
-int64_t generate_expiration_timestamp(int64_t seconds_from_now) {
+int64_t generate_expiration_timestamp(int64_t seconds_from_now)
+{
     return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + seconds_from_now;
 }
