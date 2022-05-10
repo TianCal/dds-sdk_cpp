@@ -4,7 +4,6 @@
 #include "dds.grpc.pb.h"
 #include <grpc++/grpc++.h>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <chrono>

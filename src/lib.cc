@@ -1,6 +1,7 @@
 #include "lib.h"
 #include "dds.grpc.pb.h"
 #include <google/protobuf/message.h>
+#include <sstream>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include "base64urldecode.h"
@@ -267,7 +268,7 @@ void DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_reje
     context.AddMetadata("authorization", this->jwt);
     Status status;
     status = _stub->ConfirmTask(&context, request, &response);
-    Decision* to_release = request.release_decision();
+    Decision *to_release = request.release_decision();
     if (!status.ok())
     {
         throw std::invalid_argument("RPC failed" + status.error_code() + std::string(":") + status.error_message());
