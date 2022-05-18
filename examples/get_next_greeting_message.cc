@@ -2,6 +2,8 @@
 #include <grpc++/grpc++.h>
 #include "lib.h"
 #include <chrono>
+using namespace colink;
+
 int main(int argc, char **argv)
 {
     using std::string;

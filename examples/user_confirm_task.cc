@@ -1,5 +1,6 @@
 #include <grpc++/grpc++.h>
 #include "lib.h"
+using namespace colink;
 
 int main(int argc, char **argv)
 {

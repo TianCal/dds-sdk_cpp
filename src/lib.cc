@@ -7,29 +7,31 @@
 #include "base64urldecode.h"
 #include "random.h"
 using namespace dds;
+using colink::JWT;
+using colink::DdsSubscriber;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
-void to_json(nlohmann::json &j, const JWT &value)
+void colink::to_json(nlohmann::json &j, const JWT &value)
 {
     j = nlohmann::json{{"role", value.role}, {"user_id", value.user_id}, {"exp", value.exp}};
 }
 
-void from_json(const nlohmann::json &j, JWT &value)
+void colink::from_json(const nlohmann::json &j, JWT &value)
 {
     j.at("role").get_to(value.role);
     j.at("user_id").get_to(value.user_id);
     j.at("exp").get_to(value.exp);
 }
 
-DDSClient::DDSClient(std::shared_ptr<Channel> channel, std::string admin_jwt)
+colink::DDSClient::DDSClient(std::shared_ptr<Channel> channel, std::string admin_jwt)
 {
     _stub = DDS::NewStub(channel);
     jwt = admin_jwt;
 }
 
-std::string DDSClient::import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature)
+std::string colink::DDSClient::import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature)
 {
     unsigned char compressed_user_public_key_bytes[33];
     size_t compressed_user_public_key_len = sizeof(compressed_user_public_key_bytes);
@@ -60,12 +62,12 @@ std::string DDSClient::import_user(secp256k1_pubkey user_public_key, int64_t sig
     }
 }
 
-std::string DDSClient::refresh_token()
+std::string colink::DDSClient::refresh_token()
 {
     return this->refresh_token_with_expiration_time(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400);
 }
 
-std::string DDSClient::refresh_token_with_expiration_time(int64_t expiration_time)
+std::string colink::DDSClient::refresh_token_with_expiration_time(int64_t expiration_time)
 {
     RefreshTokenRequest request;
     request.set_expiration_time(expiration_time);
@@ -86,7 +88,7 @@ std::string DDSClient::refresh_token_with_expiration_time(int64_t expiration_tim
     }
 }
 
-std::tuple<std::string, secp256k1_pubkey> DDSClient::request_core_info()
+std::tuple<std::string, secp256k1_pubkey> colink::DDSClient::request_core_info()
 {
     Empty request;
     CoreInfo response;
@@ -112,7 +114,7 @@ std::tuple<std::string, secp256k1_pubkey> DDSClient::request_core_info()
     }
 }
 
-std::string DDSClient::create_entry(std::string key_name, unsigned char *payload, size_t payload_size)
+std::string colink::DDSClient::create_entry(std::string key_name, unsigned char *payload, size_t payload_size)
 {
     StorageEntry request;
     request.set_key_name(key_name);
@@ -132,7 +134,7 @@ std::string DDSClient::create_entry(std::string key_name, unsigned char *payload
     }
 }
 
-std::string DDSClient::update_entry(std::string key_name, unsigned char *payload, size_t payload_size)
+std::string colink::DDSClient::update_entry(std::string key_name, unsigned char *payload, size_t payload_size)
 {
     StorageEntry request;
     request.set_key_name(key_name);
@@ -152,7 +154,7 @@ std::string DDSClient::update_entry(std::string key_name, unsigned char *payload
     }
 }
 
-std::string DDSClient::delete_entry(std::string key_name)
+std::string colink::DDSClient::delete_entry(std::string key_name)
 {
     StorageEntry request;
     request.set_key_name(key_name);
@@ -171,7 +173,7 @@ std::string DDSClient::delete_entry(std::string key_name)
     }
 }
 
-std::vector<StorageEntry> DDSClient::read_entries(std::vector<StorageEntry> entries)
+std::vector<StorageEntry> colink::DDSClient::read_entries(std::vector<StorageEntry> entries)
 {
     StorageEntries request;
     for (int i = 0; i < entries.size(); i++)
@@ -199,7 +201,7 @@ std::vector<StorageEntry> DDSClient::read_entries(std::vector<StorageEntry> entr
     }
 }
 
-void DDSClient::import_guest_jwt(std::string jwt)
+void colink::DDSClient::import_guest_jwt(std::string jwt)
 {
     JWT jwt_decoded = decode_jwt_without_validation(jwt);
     std::string key_name = "_dds_internal:known_users:" + jwt_decoded.user_id + ":guest_jwt";
@@ -210,7 +212,7 @@ void DDSClient::import_guest_jwt(std::string jwt)
     this->create_entry(key_name, jwt_bytes, sizeof(jwt));
 }
 
-void DDSClient::import_core_addr(std::string user_id, std::string core_addr)
+void colink::DDSClient::import_core_addr(std::string user_id, std::string core_addr)
 {
     std::string key_name = "_dds_internal:known_users:" + user_id + ":core_addr";
     unsigned char *core_addr_bytes;
@@ -220,13 +222,13 @@ void DDSClient::import_core_addr(std::string user_id, std::string core_addr)
     this->create_entry(key_name, core_addr_bytes, sizeof(core_addr));
 }
 
-std::string DDSClient::run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement)
+std::string colink::DDSClient::run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement)
 {
     int expiration_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400;
     return this->run_task_with_expiration_time(protocol_name, protocol_param, protocol_param_size, participants, require_agreement, expiration_time);
 }
 
-std::string DDSClient::run_task_with_expiration_time(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time)
+std::string colink::DDSClient::run_task_with_expiration_time(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time)
 {
     Task request;
     for (int i = 0; i < participants.size(); i++)
@@ -254,7 +256,7 @@ std::string DDSClient::run_task_with_expiration_time(std::string protocol_name, 
     }
 }
 
-void DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_rejected, std::string reason)
+void colink::DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_rejected, std::string reason)
 {
     Decision decision;
     decision.set_is_approved(is_approved);
@@ -275,7 +277,7 @@ void DDSClient::confirm_task(std::string task_id, bool is_approved, bool is_reje
     }
 }
 
-void DDSClient::finish_task(std::string task_id)
+void colink::DDSClient::finish_task(std::string task_id)
 {
     Task request;
     request.set_task_id(task_id);
@@ -290,7 +292,7 @@ void DDSClient::finish_task(std::string task_id)
     }
 }
 
-std::string DDSClient::subscribe(std::string key_name, int64_t start_timestamp)
+std::string colink::DDSClient::subscribe(std::string key_name, int64_t start_timestamp)
 {
     SubscribeRequest request;
     request.set_key_name(key_name);
@@ -310,7 +312,7 @@ std::string DDSClient::subscribe(std::string key_name, int64_t start_timestamp)
     }
 }
 
-DdsSubscriber DDSClient::new_subscriber(std::string queue_name)
+DdsSubscriber colink::DDSClient::new_subscriber(std::string queue_name)
 {
     secp256k1_pubkey _;
     std::string core_mq_uri;
@@ -319,7 +321,7 @@ DdsSubscriber DDSClient::new_subscriber(std::string queue_name)
     return subscriber;
 }
 
-std::vector<std::string> split(const std::string &s, char delim)
+std::vector<std::string> colink::split(const std::string &s, char delim)
 {
     std::stringstream ss(s);
     std::string item;
@@ -331,7 +333,7 @@ std::vector<std::string> split(const std::string &s, char delim)
     return elems;
 }
 
-JWT decode_jwt_without_validation(std::string jwt)
+JWT colink::decode_jwt_without_validation(std::string jwt)
 {
     std::vector<std::string> splitted_jwt = split(jwt, '.');
     std::string decoded = base64_decode(splitted_jwt[1]);
@@ -340,7 +342,7 @@ JWT decode_jwt_without_validation(std::string jwt)
     return structed_JWT;
 }
 
-std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp)
+std::tuple<int64_t, const unsigned char *> colink::prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp)
 {
     int64_t signature_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
@@ -383,7 +385,7 @@ std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256
     return std::make_tuple(signature_timestamp, serialized_signature);
 }
 
-secp256k1_pubkey generate_user(unsigned char *seckey)
+secp256k1_pubkey colink::generate_user(unsigned char *seckey)
 {
     secp256k1_pubkey user_public_key;
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
@@ -405,7 +407,7 @@ secp256k1_pubkey generate_user(unsigned char *seckey)
     return user_public_key;
 }
 
-int64_t generate_expiration_timestamp(int64_t seconds_from_now)
+int64_t colink::generate_expiration_timestamp(int64_t seconds_from_now)
 {
     return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + seconds_from_now;
 }
