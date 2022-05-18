@@ -74,7 +74,7 @@ namespace colink
     std::tuple<int64_t, const unsigned char *> prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp);
     secp256k1_pubkey generate_user(unsigned char *seckey);
     int64_t generate_expiration_timestamp(int64_t seconds_from_now);
-    void colink::to_json(nlohmann::json &j, const JWT &value);
+    void to_json(nlohmann::json &j, const JWT &value);
     void from_json(const nlohmann::json &j, JWT &value);
 }
 #endif
