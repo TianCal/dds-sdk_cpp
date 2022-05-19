@@ -105,24 +105,6 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 ########################################################################
-
-include_directories(src)
-include_directories(thirdparty)
-foreach(_target admin_import_user admin_import_users_and_exchange_guest_jwts auto_confirm request_core_info user_run_task user_refresh_token user_confirm_task user_import_guest_jwt get_next_greeting_message user_run_local_task user_greetings_to_multiple_user)
-    add_executable(${_target} "examples/${_target}.cc" "src/colink_sdk.cc")
-    target_link_libraries(${_target}
-            dds_grpc_proto
-            ${_PROTOBUF_LIBPROTOBUF}
-            ${_REFLECTION}
-            ${_GRPC_GRPCPP})
-    target_link_libraries(${_target} ${LIBRARIES})
-    add_dependencies(${_target} ${DEPENDENCIES}) 
-endforeach()
-
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-include(CPack)
-
 add_library(libcolinksdk "src/colink_sdk.cc")
 target_link_libraries(libcolinksdk
     dds_grpc_proto
@@ -131,5 +113,17 @@ target_link_libraries(libcolinksdk
     ${_GRPC_GRPCPP})
 target_link_libraries(libcolinksdk ${LIBRARIES})
 add_dependencies(libcolinksdk ${DEPENDENCIES}) 
+
+include_directories(src)
+include_directories(thirdparty)
+foreach(_target admin_import_user admin_import_users_and_exchange_guest_jwts auto_confirm request_core_info user_run_task user_refresh_token user_confirm_task user_import_guest_jwt get_next_greeting_message user_run_local_task user_greetings_to_multiple_user)
+    add_executable(${_target} "examples/${_target}.cc")
+    target_link_libraries(${_target} libcolinksdk)
+endforeach()
+
+set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+include(CPack)
+
 install(TARGETS libcolinksdk DESTINATION lib)
 install(FILES "src/colink_sdk.h" DESTINATION include)
