@@ -1,5 +1,5 @@
-#ifndef LIB_H
-#define LIB_H
+#ifndef COLINK_SDK_H
+#define COLINK_SDK_H
 
 #include "dds.grpc.pb.h"
 #include <grpc++/grpc++.h>

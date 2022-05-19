@@ -1,6 +1,6 @@
 #include <secp256k1.h>
 #include <grpc++/grpc++.h>
-#include "lib.h"
+#include "colink_sdk.h"
 using namespace colink;
 
 int main(int argc, char **argv)

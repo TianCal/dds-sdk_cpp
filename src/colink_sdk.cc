@@ -1,4 +1,4 @@
-#include "lib.h"
+#include "colink_sdk.h"
 #include "dds.grpc.pb.h"
 #include <google/protobuf/message.h>
 #include <sstream>
