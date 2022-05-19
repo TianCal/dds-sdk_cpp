@@ -54,10 +54,7 @@ target_link_libraries(dds_grpc_proto
         ${_GRPC_GRPCPP})
 
 ########################################################################
-
-########################################################################
 # Secp256k1
-
 include(ExternalProject)
 set(SECP256K1_ROOT "${CMAKE_CURRENT_BINARY_DIR}/secp256k1")
 ExternalProject_Add(libsecp256k1
