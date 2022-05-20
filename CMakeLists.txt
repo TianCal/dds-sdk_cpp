@@ -125,3 +125,4 @@ include(CPack)
 
 install(TARGETS libcolinksdk DESTINATION lib)
 install(FILES "src/colink_sdk.h" DESTINATION include)
+install(FILES ${dds_grpc_headers} DESTINATION include)
