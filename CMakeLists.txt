@@ -87,9 +87,8 @@ ExternalProject_Add(SimpleAmqpClient
     GIT_TAG master
     CMAKE_ARGS  -Wno-dev 
                 -DCMAKE_INSTALL_PREFIX=${SimpleAmqpClient_ROOT}
-                -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
     BUILD_COMMAND make
-    INSTALL_COMMAND make install
+    INSTALL_COMMAND sudo make install
 )
 set(SimpleAmqpClient_LIBRARY ${SimpleAmqpClient_ROOT}/lib/libSimpleAmqpClient${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(SimpleAmqpClient_INCLUDE_DIR ${SimpleAmqpClient_ROOT}/include)
