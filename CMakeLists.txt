@@ -84,6 +84,7 @@ include(ExternalProject)
 set(SimpleAmqpClient_ROOT "${CMAKE_CURRENT_BINARY_DIR}/SimpleAmqpClient")
 ExternalProject_Add(SimpleAmqpClient
     GIT_REPOSITORY https://github.com/alanxz/SimpleAmqpClient.git
+    GIT_TAG master
     CMAKE_ARGS  -Wno-dev 
                 -DCMAKE_INSTALL_PREFIX=${SimpleAmqpClient_ROOT}
                 -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
