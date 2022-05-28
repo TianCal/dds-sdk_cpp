@@ -120,6 +120,11 @@ foreach(_target admin_import_user admin_import_users_and_exchange_guest_jwts aut
     target_link_libraries(${_target} libcolinksdk)
 endforeach()
 
+foreach(_target colink_sdk_p)
+    add_executable(${_target} "src/${_target}.cc")
+    target_link_libraries(${_target} libcolinksdk)
+endforeach()
+
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)

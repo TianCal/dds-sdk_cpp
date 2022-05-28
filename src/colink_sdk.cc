@@ -28,6 +28,7 @@ void colink::from_json(const nlohmann::json &j, JWT &value)
 colink::DDSClient::DDSClient(std::shared_ptr<Channel> channel, std::string admin_jwt)
 {
     _stub = DDS::NewStub(channel);
+    this->channel = channel;
     jwt = admin_jwt;
 }
 
@@ -65,6 +66,16 @@ std::string colink::DDSClient::import_user(secp256k1_pubkey user_public_key, int
 std::string colink::DDSClient::refresh_token()
 {
     return this->refresh_token_with_expiration_time(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400);
+}
+
+void colink::DDSClient::set_task_id(std::string task_id)
+{
+    this->task_id = task_id;
+}
+
+std::string colink::DDSClient::get_task_id()
+{
+    return this->jwt;
 }
 
 std::string colink::DDSClient::refresh_token_with_expiration_time(int64_t expiration_time)
@@ -410,4 +421,12 @@ secp256k1_pubkey colink::generate_user(unsigned char *seckey)
 int64_t colink::generate_expiration_timestamp(int64_t seconds_from_now)
 {
     return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + seconds_from_now;
+}
+
+int64_t colink::get_timestamp(std::string key_path)
+{
+    size_t pos = key_path.rfind('@');
+    std::string timestamp_str = key_path.substr(pos + 1);
+    int64_t timestamp = strtoll(timestamp_str.c_str(), NULL, 10);
+    return timestamp;
 }

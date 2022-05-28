@@ -14,6 +14,7 @@
 using namespace dds;
 using grpc::ClientContext;
 using grpc::Status;
+using grpc::Channel;
 
 namespace colink
 {
@@ -46,6 +47,14 @@ namespace colink
     {
     public:
         DDSClient(std::shared_ptr<grpc::Channel> channel, std::string admin_jwt);
+        DDSClient(const DDSClient &cl) {
+            this->_stub = DDS::NewStub(cl.channel);
+            this->jwt = cl.jwt;
+            this->task_id = cl.task_id;
+            this->channel = cl.channel;
+        }
+        DDSClient() {};
+        ~DDSClient() {};
         std::string import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature);
         std::string create_entry(std::string key_name, unsigned char *payload, size_t payload_size);
         std::string update_entry(std::string key_name, unsigned char *payload, size_t payload_size);
@@ -62,11 +71,14 @@ namespace colink
         std::string run_task_with_expiration_time(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time);
         void confirm_task(std::string task_id, bool is_approved, bool is_rejected, std::string reason);
         void finish_task(std::string task_id);
+        void set_task_id(std::string task_id);
+        std::string get_task_id();
 
     private:
         std::unique_ptr<DDS::Stub> _stub;
         std::string jwt;
         std::string task_id;
+        std::shared_ptr<Channel> channel;
     };
 
     std::vector<std::string> split(const std::string &s, char delim);
@@ -76,5 +88,6 @@ namespace colink
     int64_t generate_expiration_timestamp(int64_t seconds_from_now);
     void to_json(nlohmann::json &j, const JWT &value);
     void from_json(const nlohmann::json &j, JWT &value);
+    int64_t get_timestamp(std::string key_path);
 }
 #endif

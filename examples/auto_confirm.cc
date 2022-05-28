@@ -2,14 +2,6 @@
 #include "colink_sdk.h"
 using namespace colink;
 
-int64_t get_timestamp(std::string key_path)
-{
-    size_t pos = key_path.rfind('@');
-    std::string timestamp_str = key_path.substr(pos + 1);
-    int64_t timestamp = strtoll(timestamp_str.c_str(), NULL, 10);
-    return timestamp;
-}
-
 int main(int argc, char **argv)
 {
     using std::string;
