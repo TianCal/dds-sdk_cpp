@@ -32,13 +32,13 @@ void colink_sdk_p::CoLinkProtocol::start()
             list.ParseFromString(list_entry.payload());
             if (list.task_ids_with_key_paths_size() == 0)
             {
-                start_timestamp = colink_sdk_a::get_timestamp(list_entry.key_path());
+                start_timestamp = get_timestamp(list_entry.key_path());
             }
             else
             {
                 for (CoLinkInternalTaskIDWithKeyPath currTask : list.task_ids_with_key_paths())
                 {
-                    start_timestamp = std::min(start_timestamp, colink_sdk_a::get_timestamp(currTask.key_path()));
+                    start_timestamp = std::min(start_timestamp, get_timestamp(currTask.key_path()));
                 }
             }
         }
@@ -117,7 +117,6 @@ class Initiator: public ProtocolEntry {
 class Receiver: public ProtocolEntry {
     public:
         void start(DDSClient cl, unsigned char *param, size_t param_size, std::vector<Participant> participants) {
-            //TODO: this might  be string?
             std::cout << "Receiver" << std::endl;
             cl.create_entry("tasks:" + cl.get_task_id() +":output", param, param_size);
         }
