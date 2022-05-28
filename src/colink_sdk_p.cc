@@ -54,7 +54,54 @@ void colink_sdk_p::CoLinkProtocol::start()
                 queue_name_bytes);
         this->cl.create_entry(operator_mq_key, queue_name_bytes, sizeof(queue_name));
     }
-}
+    secp256k1_pubkey _;
+    std::string mq_addr;    
+    std::tie(mq_addr, _) = this->cl.request_core_info();
+
+    AmqpClient::Channel::ptr_t mq = AmqpClient::Channel::Open(AmqpClient::Channel::OpenOpts::FromUri(mq_addr));
+    std::string consumer_tag = mq->BasicConsume(queue_name, "", true, false);
+    mq->BasicQos(consumer_tag, 1);
+
+    while (1) {
+        AmqpClient::Envelope::ptr_t envelope = mq->BasicConsumeMessage(consumer_tag);
+        std::string data = envelope.get()->Message()->Body();
+        SubscriptionMessage message;
+        message.ParseFromString(data);
+        if (message.change_type() != "delete") {
+            Task task_id;
+            task_id.ParseFromString(message.payload());
+            StorageEntry read_key;
+            //TODO: remove _dds
+            read_key.set_key_name("_dds_internal:tasks:" + task_id.task_id());
+            std::vector<StorageEntry> read_keys{read_key};
+            try {
+                std::vector<StorageEntry> res = this->cl.read_entries(read_keys);
+                StorageEntry task_entry = res[0];
+                Task task;
+                task.ParseFromString(task_entry.payload());
+                if (task.status() == "started")
+                {
+                    //begin user func
+                    DDSClient cl(this->cl);
+                    cl.set_task_id(task_id.task_id());
+                    std::string ptype = "";
+                    std::string protocol_param = task.protocol_param();
+                    unsigned char *protocol_param_bytes;
+                    std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&protocol_param)),
+                        static_cast<const unsigned char *>(static_cast<const void *>(&protocol_param)) + sizeof protocol_param,
+                        protocol_param_bytes);
+                    std::vector<Participant> participants(task.participants().begin(), task.participants().end());
+                    this->user_func->start(cl, protocol_param_bytes, sizeof(protocol_param), participants);
+                    this->cl.finish_task(task_id.task_id());
+                }
+            }
+            catch (std::invalid_argument &e) {
+                throw std::invalid_argument(std::string("Pull Task Error:") + e.what());
+            }
+        }
+        mq->BasicAck(envelope);
+    }
+}   
 DDSClient _colink_parse_args(int argc, char **argv) {
     using std::string;
     string server_address = argv[1];
