@@ -1,7 +1,7 @@
 #include <secp256k1.h>
 #include <grpc++/grpc++.h>
 #include "colink_sdk.h"
-using namespace colink;
+using namespace colink_sdk_a;
 
 int main(int argc, char **argv)
 {

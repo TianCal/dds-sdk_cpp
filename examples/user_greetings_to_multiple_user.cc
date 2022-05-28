@@ -1,12 +1,12 @@
 #include <secp256k1.h>
 #include <grpc++/grpc++.h>
 #include "colink_sdk.h"
-using namespace colink;
+using namespace colink_sdk_a;
 
 int main(int argc, char **argv)
 {
     using std::string;
-    using namespace dds;
+    using namespace colink;
     string server_address = argv[1];
     string jwt_initiator = argv[2];
     string msg = "hello";

@@ -2,12 +2,12 @@
 #include <grpc++/grpc++.h>
 #include "colink_sdk.h"
 #include <chrono>
-using namespace colink;
+using namespace colink_sdk_a;
 
 int main(int argc, char **argv)
 {
     using std::string;
-    using namespace dds;
+    using namespace colink;
     string server_address = argv[1];
     string jwt = argv[2];
     string timestamp_str = (argc > 3) ? argv[3] : "";

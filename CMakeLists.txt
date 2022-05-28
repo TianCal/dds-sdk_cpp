@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(ddssdk VERSION 0.1.0)
+project(colinksdk VERSION 0.1.0)
 
 find_package(Threads)
 set(protobuf_MODULE_COMPATIBLE TRUE)
@@ -25,31 +25,31 @@ else()
 endif()
 
 # Proto file
-get_filename_component(dds_proto "./proto/dds.proto" ABSOLUTE)
-get_filename_component(dds_proto_path "${dds_proto}" PATH)
+get_filename_component(colink_proto "./proto/colink.proto" ABSOLUTE)
+get_filename_component(colink_proto_path "${colink_proto}" PATH)
 
 # Generated sources
-set(dds_proto_sources "${CMAKE_CURRENT_BINARY_DIR}/dds.pb.cc")
-set(dds_proto_headers "${CMAKE_CURRENT_BINARY_DIR}/dds.pb.h")
-set(dds_grpc_sources "${CMAKE_CURRENT_BINARY_DIR}/dds.grpc.pb.cc")
-set(dds_grpc_headers "${CMAKE_CURRENT_BINARY_DIR}/dds.grpc.pb.h")
+set(colink_proto_sources "${CMAKE_CURRENT_BINARY_DIR}/colink.pb.cc")
+set(colink_proto_headers "${CMAKE_CURRENT_BINARY_DIR}/colink.pb.h")
+set(colink_grpc_sources "${CMAKE_CURRENT_BINARY_DIR}/colink.grpc.pb.cc")
+set(colink_grpc_headers "${CMAKE_CURRENT_BINARY_DIR}/colink.grpc.pb.h")
 add_custom_command(
-        OUTPUT "${dds_proto_sources}" "${dds_proto_headers}" "${dds_grpc_sources}" "${dds_grpc_headers}"
+        OUTPUT "${colink_proto_sources}" "${colink_proto_headers}" "${colink_grpc_sources}" "${colink_grpc_headers}"
         COMMAND ${_PROTOBUF_PROTOC}
         ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}" --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-        -I "${dds_proto_path}"
+        -I "${colink_proto_path}"
         --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-        "${dds_proto}"
-        DEPENDS "${dds_proto}")
+        "${colink_proto}"
+        DEPENDS "${colink_proto}")
 # Include generated *.pb.h files
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-# dds_grpc_proto
-add_library(dds_grpc_proto
-        ${dds_proto_sources}
-        ${dds_proto_headers}
-        ${dds_grpc_sources}
-        ${dds_grpc_headers})
-target_link_libraries(dds_grpc_proto
+# colink_grpc_proto
+add_library(colink_grpc_proto
+        ${colink_proto_sources}
+        ${colink_proto_headers}
+        ${colink_grpc_sources}
+        ${colink_grpc_headers})
+target_link_libraries(colink_grpc_proto
         ${_PROTOBUF_LIBPROTOBUF}
         ${_REFLECTION}
         ${_GRPC_GRPCPP})
@@ -106,7 +106,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 ########################################################################
 add_library(libcolinksdk "src/colink_sdk.cc")
 target_link_libraries(libcolinksdk
-    dds_grpc_proto
+    colink_grpc_proto
     ${_PROTOBUF_LIBPROTOBUF}
     ${_REFLECTION}
     ${_GRPC_GRPCPP})
@@ -131,7 +131,7 @@ include(CPack)
 
 install(TARGETS libcolinksdk DESTINATION lib)
 install(FILES "src/colink_sdk.h" DESTINATION include)
-install(FILES ${dds_grpc_headers} DESTINATION include)
-install(FILES ${dds_proto_headers} DESTINATION include)
+install(FILES ${colink_grpc_headers} DESTINATION include)
+install(FILES ${colink_proto_headers} DESTINATION include)
 install(DIRECTORY thirdparty/ DESTINATION include FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY thirdparty/ DESTINATION include FILES_MATCHING PATTERN "*.hpp")

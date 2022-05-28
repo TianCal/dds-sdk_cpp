@@ -1,7 +1,7 @@
 #ifndef COLINK_SDK_H
 #define COLINK_SDK_H
 
-#include "dds.grpc.pb.h"
+#include "colink.grpc.pb.h"
 #include <grpc++/grpc++.h>
 #include <iostream>
 #include <string>
@@ -11,12 +11,12 @@
 #include <secp256k1.h>
 #include "json.hpp"
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
-using namespace dds;
+using namespace colink;
 using grpc::ClientContext;
 using grpc::Status;
 using grpc::Channel;
 
-namespace colink
+namespace colink_sdk_a
 {
     struct JWT
     {
@@ -48,7 +48,7 @@ namespace colink
     public:
         DDSClient(std::shared_ptr<grpc::Channel> channel, std::string admin_jwt);
         DDSClient(const DDSClient &cl) {
-            this->_stub = DDS::NewStub(cl.channel);
+            this->_stub = CoLink::NewStub(cl.channel);
             this->jwt = cl.jwt;
             this->task_id = cl.task_id;
             this->channel = cl.channel;
@@ -75,7 +75,7 @@ namespace colink
         std::string get_task_id();
 
     private:
-        std::unique_ptr<DDS::Stub> _stub;
+        std::unique_ptr<CoLink::Stub> _stub;
         std::string jwt;
         std::string task_id;
         std::shared_ptr<Channel> channel;

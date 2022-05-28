@@ -1,11 +1,11 @@
 #include <grpc++/grpc++.h>
 #include "colink_sdk.h"
-using namespace colink;
+using namespace colink_sdk_a;
 
 int main(int argc, char **argv)
 {
     using std::string;
-    using namespace dds;
+    using namespace colink;
     string server_address = argv[1];
     string jwt = argv[2];
     string task_id = argv[3];

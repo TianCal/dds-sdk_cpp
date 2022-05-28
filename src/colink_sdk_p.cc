@@ -1,11 +1,9 @@
 #include "colink_sdk_p.h"
-using namespace dds;
-using colink::JWT;
-using colink::DdsSubscriber;
+using namespace colink;
+using namespace colink_sdk_a;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
-using colink::DDSClient;
 using colink_sdk_p::ProtocolEntry;
 
 void colink_sdk_p::CoLinkProtocol::start()
@@ -30,17 +28,17 @@ void colink_sdk_p::CoLinkProtocol::start()
             std::vector<StorageEntry> res = this->cl.read_entries(read_keys);
             start_timestamp = INT64_MAX;
             StorageEntry list_entry = res[0];
-            DDSInternalTaskIDList list;
+            CoLinkInternalTaskIDList list;
             list.ParseFromString(list_entry.payload());
             if (list.task_ids_with_key_paths_size() == 0)
             {
-                start_timestamp = colink::get_timestamp(list_entry.key_path());
+                start_timestamp = colink_sdk_a::get_timestamp(list_entry.key_path());
             }
             else
             {
-                for (DDSInternalTaskIDWithKeyPath currTask : list.task_ids_with_key_paths())
+                for (CoLinkInternalTaskIDWithKeyPath currTask : list.task_ids_with_key_paths())
                 {
-                    start_timestamp = std::min(start_timestamp, colink::get_timestamp(currTask.key_path()));
+                    start_timestamp = std::min(start_timestamp, colink_sdk_a::get_timestamp(currTask.key_path()));
                 }
             }
         }

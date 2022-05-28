@@ -1,11 +1,11 @@
 #include <grpc++/grpc++.h>
 #include "colink_sdk.h"
-using namespace colink;
+using namespace colink_sdk_a;
 
 int main(int argc, char **argv)
 {
     using std::string;
-    using namespace dds;
+    using namespace colink;
     string server_address = argv[1];
     string jwt = argv[2];
     string protocol_name = argv[3];
@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     // Step 2: find the earliest timestamp in the list.
     int64_t start_timestamp = INT64_MAX;
     StorageEntry list_entry = res[0];
-    DDSInternalTaskIDList list;
+    CoLinkInternalTaskIDList list;
     list.ParseFromString(list_entry.payload());
     if (list.task_ids_with_key_paths_size() == 0)
     {
@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        for (DDSInternalTaskIDWithKeyPath currTask : list.task_ids_with_key_paths())
+        for (CoLinkInternalTaskIDWithKeyPath currTask : list.task_ids_with_key_paths())
         {
             start_timestamp = std::min(start_timestamp, get_timestamp(currTask.key_path()));
         }

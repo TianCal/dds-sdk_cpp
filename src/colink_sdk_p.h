@@ -1,7 +1,7 @@
 #ifndef COLINK_SDK_P_H
 #define COLINK_SDK_P_H
 
-#include "dds.grpc.pb.h"
+#include "colink.grpc.pb.h"
 #include "colink_sdk.h"
 #include <grpc++/grpc++.h>
 #include <iostream>
@@ -10,8 +10,8 @@
 #include <chrono>
 #include <tuple>
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
-using namespace dds;
-using colink::DDSClient;
+using namespace colink;
+using namespace colink_sdk_a;
 using grpc::ClientContext;
 using grpc::Status;
 
