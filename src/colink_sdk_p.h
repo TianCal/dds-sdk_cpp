@@ -26,7 +26,8 @@ namespace colink_sdk_p
     class CoLinkProtocol
     {
     public:
-        CoLinkProtocol(std::string protocol_and_rule, DDSClient cl, ProtocolEntry *user_func);
+        CoLinkProtocol(std::string protocol_and_rule_, DDSClient cl_, ProtocolEntry *user_func_):
+            protocol_and_role(protocol_and_rule_), cl(cl_), user_func(user_func_) {}
         void start();
     private:
         std::string protocol_and_role;

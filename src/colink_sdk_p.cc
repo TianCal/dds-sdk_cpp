@@ -8,13 +8,6 @@ using grpc::Status;
 using colink::DDSClient;
 using colink_sdk_p::ProtocolEntry;
 
-colink_sdk_p::CoLinkProtocol::CoLinkProtocol(std::string protocol_and_rule, DDSClient cl, ProtocolEntry *user_func)
-{
-    this->protocol_and_role = protocol_and_role;
-    this->cl = cl;
-    this->user_func = user_func;
-}
-
 void colink_sdk_p::CoLinkProtocol::start()
 {
     std::string operator_mq_key = "_internal:protocols:" + this->protocol_and_role + ":operator_mq";
