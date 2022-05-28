@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     string timestamp_str = (argc > 3) ? argv[3] : "";
     int64_t timestamp = (argc > 3) ? strtoll(timestamp_str.c_str(), NULL, 10) : std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
-    string latest_key = "_dds_internal:protocols:greetings:finished:latest";
+    string latest_key = "_internal:protocols:greetings:finished:latest";
     string queue_name = client.subscribe(latest_key, timestamp);
     DdsSubscriber subscriber = client.new_subscriber(queue_name);
     string data = subscriber.get_next();

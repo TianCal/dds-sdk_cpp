@@ -214,7 +214,7 @@ std::vector<StorageEntry> colink_sdk_a::DDSClient::read_entries(std::vector<Stor
 void colink_sdk_a::DDSClient::import_guest_jwt(std::string jwt)
 {
     JWT jwt_decoded = decode_jwt_without_validation(jwt);
-    std::string key_name = "_dds_internal:known_users:" + jwt_decoded.user_id + ":guest_jwt";
+    std::string key_name = "_internal:known_users:" + jwt_decoded.user_id + ":guest_jwt";
     unsigned char *jwt_bytes;
     std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&jwt)),
               static_cast<const unsigned char *>(static_cast<const void *>(&jwt)) + sizeof jwt,
@@ -224,7 +224,7 @@ void colink_sdk_a::DDSClient::import_guest_jwt(std::string jwt)
 
 void colink_sdk_a::DDSClient::import_core_addr(std::string user_id, std::string core_addr)
 {
-    std::string key_name = "_dds_internal:known_users:" + user_id + ":core_addr";
+    std::string key_name = "_internal:known_users:" + user_id + ":core_addr";
     unsigned char *core_addr_bytes;
     std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&core_addr)),
               static_cast<const unsigned char *>(static_cast<const void *>(&core_addr)) + sizeof core_addr,

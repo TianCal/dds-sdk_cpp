@@ -69,8 +69,7 @@ void colink_sdk_p::CoLinkProtocol::start()
             Task task_id;
             task_id.ParseFromString(message.payload());
             StorageEntry read_key;
-            //TODO: remove _dds
-            read_key.set_key_name("_dds_internal:tasks:" + task_id.task_id());
+            read_key.set_key_name("_internal:tasks:" + task_id.task_id());
             std::vector<StorageEntry> read_keys{read_key};
             try {
                 std::vector<StorageEntry> res = this->cl.read_entries(read_keys);

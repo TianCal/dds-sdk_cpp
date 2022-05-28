@@ -11,8 +11,8 @@ int main(int argc, char **argv)
     string protocol_name = argv[3];
     
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
-    string list_key = "_dds_internal:protocols:" + protocol_name + ":waiting";
-    string latest_key = "_dds_internal:protocols:" + protocol_name + ":waiting:latest";
+    string list_key = "_internal:protocols:" + protocol_name + ":waiting";
+    string latest_key = "_internal:protocols:" + protocol_name + ":waiting:latest";
     // Step 1: get the list of key_path which contains the timestamp.
     StorageEntry read_key;
     read_key.set_key_name(list_key);
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
             Task task_id;
             task_id.ParseFromString(message.payload());
             StorageEntry read_key;
-            read_key.set_key_name("_dds_internal:tasks:" + task_id.task_id());
+            read_key.set_key_name("_internal:tasks:" + task_id.task_id());
             std::vector<StorageEntry> read_keys{read_key};
             std::vector<StorageEntry> res = client.read_entries(read_keys);
             StorageEntry task_entry = res[0];
