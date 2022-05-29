@@ -6,14 +6,14 @@ using colink_sdk_p::ProtocolEntry;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
-
+using std::string;
 void colink_sdk_p::CoLinkProtocol::start()
 {
-    std::string operator_mq_key = "_internal:protocols:" + this->protocol_and_role + ":operator_mq";
+    string operator_mq_key = "_internal:protocols:" + this->protocol_and_role + ":operator_mq";
     StorageEntry read_key;
     read_key.set_key_name(operator_mq_key);
     std::vector<StorageEntry> read_keys{read_key};
-    std::string queue_name;
+    string queue_name;
     try
     {
         std::vector<StorageEntry> res = this->cl.read_entries(read_keys);
@@ -21,8 +21,8 @@ void colink_sdk_p::CoLinkProtocol::start()
     }
     catch (std::invalid_argument e)
     {
-        std::string list_key = "_internal:protocols:" + this->protocol_and_role + ":started";
-        std::string latest_key = "_internal:protocols:" + this->protocol_and_role + ":started:latest";
+        string list_key = "_internal:protocols:" + this->protocol_and_role + ":started";
+        string latest_key = "_internal:protocols:" + this->protocol_and_role + ":started:latest";
         StorageEntry read_key;
         read_key.set_key_name(list_key);
         std::vector<StorageEntry> read_keys{read_key};
@@ -58,18 +58,19 @@ void colink_sdk_p::CoLinkProtocol::start()
         this->cl.create_entry(operator_mq_key, queue_name_bytes, sizeof(queue_name));
     }
     secp256k1_pubkey _;
-    std::string mq_addr;
+    string mq_addr;
     std::tie(mq_addr, _) = this->cl.request_core_info();
 
     AmqpClient::Channel::ptr_t mq = AmqpClient::Channel::Open(AmqpClient::Channel::OpenOpts::FromUri(mq_addr));
-    std::string consumer_tag = mq->BasicConsume(queue_name, "", true, false);
+    string consumer_tag = mq->BasicConsume(queue_name, "", true, false);
     mq->BasicQos(consumer_tag, 1);
+    AmqpClient::Envelope::ptr_t envelope;
 
     while (1)
     {
-        AmqpClient::Envelope::ptr_t envelope = mq->BasicConsumeMessage(consumer_tag);
+        envelope = mq->BasicConsumeMessage(consumer_tag);
         mq->BasicAck(envelope);
-        std::string data = envelope.get()->Message()->Body();
+        string data = envelope.get()->Message()->Body();
         SubscriptionMessage message;
         message.ParseFromString(data);
         if (message.change_type() != "delete")
@@ -88,10 +89,10 @@ void colink_sdk_p::CoLinkProtocol::start()
                 if (task.status() == "started")
                 {
                     // begin user func
-                    DDSClient cl(this->cl);
-                    cl.set_task_id(task_id.task_id());
-                    std::string ptype = "";
-                    std::string protocol_param = task.protocol_param();
+                    DDSClient cl_copy(this->cl);
+                    cl_copy.set_task_id(task_id.task_id());
+                    string ptype = "";
+                    string protocol_param = task.protocol_param();
                     unsigned char *protocol_param_bytes;
                     std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&protocol_param)),
                               static_cast<const unsigned char *>(static_cast<const void *>(&protocol_param)) + sizeof protocol_param,
@@ -102,20 +103,19 @@ void colink_sdk_p::CoLinkProtocol::start()
                         Participant participant = task.participants(i);
                         participants.push_back(participant);
                     }
-                    this->user_func->start(cl, protocol_param_bytes, sizeof(protocol_param), participants);
+                    this->user_func->start(cl_copy, protocol_param_bytes, sizeof(protocol_param), participants);
                     this->cl.finish_task(task_id.task_id());
                 }
             }
             catch (std::invalid_argument &e)
             {
-                throw std::invalid_argument(std::string("Pull Task Error:") + e.what());
+                throw std::invalid_argument(string("Pull Task Error:") + e.what());
             }
         }
     }
 }
 DDSClient _colink_parse_args(int argc, char **argv)
 {
-    using std::string;
     string server_address = "127.0.0.1:8100";                                                                                                                                                                                // argv[1];
     string jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoidXNlciIsInVzZXJfaWQiOiJBcTFxVHZwMXRIOXJKNmRWL2Z3dWVtY0tRTHpLTlJrTTNLY1p1ZlNsOCtHQSIsImV4cCI6MTY1NjUzMzQyNn0.etESRSgxfXDgv2HyR1i_-g0gqNbehsGwPfmAgUr2cig"; // argv[2];
     DDSClient cl{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
@@ -141,29 +141,29 @@ public:
     }
 };
 
-void colink_sdk_p::_protocl_start(DDSClient cl, std::map<std::string, ProtocolEntry *> user_funcs)
+void colink_sdk_p::_protocl_start(DDSClient cl, std::map<string, ProtocolEntry *> user_funcs)
 {
     std::vector<std::thread> threads;
     for (const auto &x : user_funcs)
     {
         DDSClient cl_copy = cl;
         CoLinkProtocol curr_protocol{x.first, cl_copy, x.second};
-        // curr_protocol.start();
-        threads.push_back(std::thread([](CoLinkProtocol x)
-                                      { x.start(); },
-                                      curr_protocol));
+        curr_protocol.start();
+        //threads.push_back(std::thread([](CoLinkProtocol x)
+        //                              { x.start(); },
+        //                              curr_protocol));
     }
     std::cout << "Started" << std::endl;
-    for (auto &t : threads)
-        t.join();
+    //for (auto &t : threads)
+    //    t.join();
 }
 
 int main(int argc, char **argv)
 {
     DDSClient cl = _colink_parse_args(argc, argv);
-    std::map<std::string, ProtocolEntry *> user_funcs;
-    user_funcs["greetings:initiator"] = new Initiator();
-    // user_funcs["greetings:receiver"] = new Receiver();
+    std::map<string, ProtocolEntry *> user_funcs;
+    //user_funcs["greetings:initiator"] = new Initiator();
+    user_funcs["greetings:receiver"] = new Receiver();
     //
     colink_sdk_p::_protocl_start(cl, user_funcs);
     return 0;

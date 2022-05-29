@@ -74,7 +74,7 @@ void colink_sdk_a::DDSClient::set_task_id(std::string task_id)
 
 std::string colink_sdk_a::DDSClient::get_task_id()
 {
-    return this->jwt;
+    return this->task_id;
 }
 
 std::string colink_sdk_a::DDSClient::refresh_token_with_expiration_time(int64_t expiration_time)
