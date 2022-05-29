@@ -14,7 +14,6 @@ using namespace colink;
 using namespace colink_sdk_a;
 using grpc::ClientContext;
 using grpc::Status;
-
 namespace colink_sdk_p
 {
     class ProtocolEntry
@@ -26,14 +25,14 @@ namespace colink_sdk_p
     class CoLinkProtocol
     {
     public:
-        CoLinkProtocol(std::string protocol_and_rule_, DDSClient cl_, ProtocolEntry *user_func_):
-            protocol_and_role(protocol_and_rule_), cl(cl_), user_func(user_func_) {}
+        CoLinkProtocol(std::string protocol_and_rule_, DDSClient cl_, ProtocolEntry *user_func_) : protocol_and_role(protocol_and_rule_), cl(cl_), user_func(user_func_) {}
         void start();
+
     private:
         std::string protocol_and_role;
         DDSClient cl;
         ProtocolEntry *user_func;
     };
-    void _protocl_start(DDSClient cl, std::map<std::string, ProtocolEntry*> user_funcs);
+    void _protocl_start(DDSClient cl, std::map<std::string, ProtocolEntry *> user_funcs);
 }
 #endif
