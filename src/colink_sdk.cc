@@ -144,11 +144,11 @@ std::string colink_sdk_a::DDSClient::create_entry(std::string key_name, std::str
     }
 }
 
-std::string colink_sdk_a::DDSClient::update_entry(std::string key_name, unsigned char *payload, size_t payload_size)
+std::string colink_sdk_a::DDSClient::update_entry(std::string key_name, std::string payload)
 {
     StorageEntry request;
     request.set_key_name(key_name);
-    request.set_payload(payload, payload_size);
+    request.set_payload(payload);
     StorageEntry response;
     ClientContext context;
     context.AddMetadata("authorization", this->jwt);
@@ -224,13 +224,13 @@ void colink_sdk_a::DDSClient::import_core_addr(std::string user_id, std::string 
     this->create_entry(key_name, core_addr);
 }
 
-std::string colink_sdk_a::DDSClient::run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement)
+std::string colink_sdk_a::DDSClient::run_task(std::string protocol_name, std::string protocol_param, std::vector<Participant> participants, bool require_agreement)
 {
     int expiration_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400;
-    return this->run_task_with_expiration_time(protocol_name, protocol_param, protocol_param_size, participants, require_agreement, expiration_time);
+    return this->run_task_with_expiration_time(protocol_name, protocol_param, participants, require_agreement, expiration_time);
 }
 
-std::string colink_sdk_a::DDSClient::run_task_with_expiration_time(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time)
+std::string colink_sdk_a::DDSClient::run_task_with_expiration_time(std::string protocol_name, std::string protocol_param, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time)
 {
     Task request;
     for (int i = 0; i < participants.size(); i++)
@@ -239,7 +239,7 @@ std::string colink_sdk_a::DDSClient::run_task_with_expiration_time(std::string p
         curr_participant->CopyFrom(participants[i]);
     }
     request.set_protocol_name(protocol_name);
-    request.set_protocol_param(protocol_param, protocol_param_size);
+    request.set_protocol_param(protocol_param);
     request.set_require_agreement(require_agreement);
     request.set_expiration_time(expiration_time);
     request.set_parent_task(this->task_id);

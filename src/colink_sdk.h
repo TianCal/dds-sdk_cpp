@@ -57,7 +57,7 @@ namespace colink_sdk_a
         ~DDSClient() {};
         std::string import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature);
         std::string create_entry(std::string key_name, std::string payload);
-        std::string update_entry(std::string key_name, unsigned char *payload, size_t payload_size);
+        std::string update_entry(std::string key_name, std::string payload);
         std::string delete_entry(std::string key_name);
         std::vector<StorageEntry> read_entries(std::vector<StorageEntry> entries);
         void import_guest_jwt(std::string jwt);
@@ -67,8 +67,8 @@ namespace colink_sdk_a
         DdsSubscriber new_subscriber(std::string queue_name);
         std::string refresh_token();
         std::string refresh_token_with_expiration_time(int64_t expiration_time);
-        std::string run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement);
-        std::string run_task_with_expiration_time(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time);
+        std::string run_task(std::string protocol_name, std::string protocol_param, std::vector<Participant> participants, bool require_agreement);
+        std::string run_task_with_expiration_time(std::string protocol_name, std::string protocol_param, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time);
         void confirm_task(std::string task_id, bool is_approved, bool is_rejected, std::string reason);
         void finish_task(std::string task_id);
         void set_task_id(std::string task_id);

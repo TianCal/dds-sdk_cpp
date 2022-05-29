@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     initiator.set_ptype("initiator");
     std::vector<Participant> participants{initiator};
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt_a};
-    string task_id = client.run_task("greetings", (unsigned char *)msg.c_str(), msg.size(), participants, false);
+    string task_id = client.run_task("greetings", msg, participants, false);
     std::cout << "Local task " << task_id << " has been created, but it will remain in waiting status until the protocol starts." << std::endl;
     return 0;
 }
