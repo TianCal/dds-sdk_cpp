@@ -51,10 +51,6 @@ void colink_sdk_p::CoLinkProtocol::start()
             start_timestamp = 0;
         }
         queue_name = this->cl.subscribe(latest_key, start_timestamp);
-        /*unsigned char *queue_name_bytes;
-        std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&queue_name)),
-                  static_cast<const unsigned char *>(static_cast<const void *>(&queue_name)) + sizeof queue_name,
-                  queue_name_bytes);*/
         this->cl.create_entry(operator_mq_key, queue_name);
     }
     secp256k1_pubkey _;
@@ -132,7 +128,7 @@ class Receiver : public ProtocolEntry
 public:
     void start(DDSClient cl, std::string param, std::vector<Participant> participants) 
     {
-        std::cout << "Receiver" << param << std::endl;
+        std::cout << "Receiver, received: " << param << std::endl;
         cl.create_entry("tasks:" + cl.get_task_id() + ":output", param);
     }
 };
@@ -158,7 +154,7 @@ int main(int argc, char **argv)
 {
     DDSClient cl = _colink_parse_args(argc, argv);
     std::map<string, ProtocolEntry *> user_funcs;
-    //user_funcs["greetings:initiator"] = new Initiator();
+    user_funcs["greetings:initiator"] = new Initiator();
     user_funcs["greetings:receiver"] = new Receiver();
     //
     colink_sdk_p::_protocl_start(cl, user_funcs);
