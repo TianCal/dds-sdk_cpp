@@ -63,6 +63,7 @@ void colink_sdk_p::CoLinkProtocol::start()
 
     while (1) {
         AmqpClient::Envelope::ptr_t envelope = mq->BasicConsumeMessage(consumer_tag);
+        mq->BasicAck(envelope);
         std::string data = envelope.get()->Message()->Body();
         SubscriptionMessage message;
         message.ParseFromString(data);
@@ -101,13 +102,13 @@ void colink_sdk_p::CoLinkProtocol::start()
                 throw std::invalid_argument(std::string("Pull Task Error:") + e.what());
             }
         }
-        mq->BasicAck(envelope);
+
     }
 }   
 DDSClient _colink_parse_args(int argc, char **argv) {
     using std::string;
-    string server_address = "127.0.0.1:8090";//argv[1];
-    string jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoidXNlciIsInVzZXJfaWQiOiJBNjBRMHdKMS9pdTN1YmY1NENaeU1qZXpnMURwWlkzMVZ6NE0raWl5QjJ0aSIsImV4cCI6MTY1NjQ2NjQ3Nn0.ORXIApT_FSvYo16Jz757Jp-PIBBvGnZgeOklGPCUpRo";//argv[2];
+    string server_address = argv[1];
+    string jwt = argv[2];
     DDSClient cl{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
     return cl;
 }
@@ -132,12 +133,12 @@ void colink_sdk_p::_protocl_start(DDSClient cl, std::map<std::string, ProtocolEn
     for (const auto &x : user_funcs) {
         DDSClient cl_copy = cl;
         CoLinkProtocol curr_protocol{x.first, cl_copy, x.second};
-        curr_protocol.start();
-        //threads.push_back(std::thread([](CoLinkProtocol x){x.start();}, curr_protocol));
+        //curr_protocol.start();
+        threads.push_back(std::thread([](CoLinkProtocol x){x.start();}, curr_protocol));
     }
     std::cout << "Started" << std::endl;
-    //for (auto& t : threads)
-    //    t.join();
+    for (auto& t : threads)
+        t.join();
 }
 
 int main(int argc, char **argv)
