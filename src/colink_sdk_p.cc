@@ -1,4 +1,5 @@
 #include "colink_sdk_p.h"
+#include <thread>
 using namespace colink;
 using namespace colink_sdk_a;
 using grpc::Channel;
@@ -87,7 +88,11 @@ void colink_sdk_p::CoLinkProtocol::start()
                     std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&protocol_param)),
                         static_cast<const unsigned char *>(static_cast<const void *>(&protocol_param)) + sizeof protocol_param,
                         protocol_param_bytes);
-                    std::vector<Participant> participants(task.participants().begin(), task.participants().end());
+                    std::vector<Participant> participants;
+                    for (int i = 0; i < task.participants_size(); i++) {
+                        Participant participant = task.participants(i);
+                        participants.push_back(participant);
+                    }
                     this->user_func->start(cl, protocol_param_bytes, sizeof(protocol_param), participants);
                     this->cl.finish_task(task_id.task_id());
                 }
@@ -101,8 +106,8 @@ void colink_sdk_p::CoLinkProtocol::start()
 }   
 DDSClient _colink_parse_args(int argc, char **argv) {
     using std::string;
-    string server_address = argv[1];
-    string jwt = argv[2];
+    string server_address = "127.0.0.1:8090";//argv[1];
+    string jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoidXNlciIsInVzZXJfaWQiOiJBNjBRMHdKMS9pdTN1YmY1NENaeU1qZXpnMURwWlkzMVZ6NE0raWl5QjJ0aSIsImV4cCI6MTY1NjQ2NjQ3Nn0.ORXIApT_FSvYo16Jz757Jp-PIBBvGnZgeOklGPCUpRo";//argv[2];
     DDSClient cl{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
     return cl;
 }
@@ -123,9 +128,16 @@ class Receiver: public ProtocolEntry {
 };
 
 void colink_sdk_p::_protocl_start(DDSClient cl, std::map<std::string, ProtocolEntry*> user_funcs) {
+    std::vector<std::thread> threads;
     for (const auto &x : user_funcs) {
         DDSClient cl_copy = cl;
+        CoLinkProtocol curr_protocol{x.first, cl_copy, x.second};
+        curr_protocol.start();
+        //threads.push_back(std::thread([](CoLinkProtocol x){x.start();}, curr_protocol));
     }
+    std::cout << "Started" << std::endl;
+    //for (auto& t : threads)
+    //    t.join();
 }
 
 int main(int argc, char **argv)
@@ -133,8 +145,8 @@ int main(int argc, char **argv)
     DDSClient cl = _colink_parse_args(argc, argv);
     std::map<std::string, ProtocolEntry*> user_funcs;
     // TODO: can we pass in class instead of instances?
-    user_funcs["initiator"] = new Initiator();
-    user_funcs["receiver"] = new Receiver();
+    user_funcs["greetings:initiator"] = new Initiator();   
+    //user_funcs["receiver"] = new Receiver();
     //
     colink_sdk_p::_protocl_start(cl, user_funcs);
     return 0;
