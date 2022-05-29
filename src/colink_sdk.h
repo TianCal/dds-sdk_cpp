@@ -56,7 +56,7 @@ namespace colink_sdk_a
         DDSClient() {};
         ~DDSClient() {};
         std::string import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature);
-        std::string create_entry(std::string key_name, unsigned char *payload, size_t payload_size);
+        std::string create_entry(std::string key_name, std::string payload);
         std::string update_entry(std::string key_name, unsigned char *payload, size_t payload_size);
         std::string delete_entry(std::string key_name);
         std::vector<StorageEntry> read_entries(std::vector<StorageEntry> entries);

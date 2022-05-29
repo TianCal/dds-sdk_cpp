@@ -124,11 +124,11 @@ std::tuple<std::string, secp256k1_pubkey> colink_sdk_a::DDSClient::request_core_
     }
 }
 
-std::string colink_sdk_a::DDSClient::create_entry(std::string key_name, unsigned char *payload, size_t payload_size)
+std::string colink_sdk_a::DDSClient::create_entry(std::string key_name, std::string payload)
 {
     StorageEntry request;
     request.set_key_name(key_name);
-    request.set_payload(payload, payload_size);
+    request.set_payload(payload);
     StorageEntry response;
     ClientContext context;
     context.AddMetadata("authorization", this->jwt);
@@ -215,21 +215,13 @@ void colink_sdk_a::DDSClient::import_guest_jwt(std::string jwt)
 {
     JWT jwt_decoded = decode_jwt_without_validation(jwt);
     std::string key_name = "_internal:known_users:" + jwt_decoded.user_id + ":guest_jwt";
-    unsigned char *jwt_bytes;
-    std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&jwt)),
-              static_cast<const unsigned char *>(static_cast<const void *>(&jwt)) + sizeof jwt,
-              jwt_bytes);
-    this->create_entry(key_name, jwt_bytes, sizeof(jwt));
+    this->create_entry(key_name, jwt);
 }
 
 void colink_sdk_a::DDSClient::import_core_addr(std::string user_id, std::string core_addr)
 {
     std::string key_name = "_internal:known_users:" + user_id + ":core_addr";
-    unsigned char *core_addr_bytes;
-    std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&core_addr)),
-              static_cast<const unsigned char *>(static_cast<const void *>(&core_addr)) + sizeof core_addr,
-              core_addr_bytes);
-    this->create_entry(key_name, core_addr_bytes, sizeof(core_addr));
+    this->create_entry(key_name, core_addr);
 }
 
 std::string colink_sdk_a::DDSClient::run_task(std::string protocol_name, unsigned char *protocol_param, size_t protocol_param_size, std::vector<Participant> participants, bool require_agreement)

@@ -51,11 +51,11 @@ void colink_sdk_p::CoLinkProtocol::start()
             start_timestamp = 0;
         }
         queue_name = this->cl.subscribe(latest_key, start_timestamp);
-        unsigned char *queue_name_bytes;
+        /*unsigned char *queue_name_bytes;
         std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&queue_name)),
                   static_cast<const unsigned char *>(static_cast<const void *>(&queue_name)) + sizeof queue_name,
-                  queue_name_bytes);
-        this->cl.create_entry(operator_mq_key, queue_name_bytes, sizeof(queue_name));
+                  queue_name_bytes);*/
+        this->cl.create_entry(operator_mq_key, queue_name);
     }
     secp256k1_pubkey _;
     string mq_addr;
@@ -93,17 +93,13 @@ void colink_sdk_p::CoLinkProtocol::start()
                     cl_copy.set_task_id(task_id.task_id());
                     string ptype = "";
                     string protocol_param = task.protocol_param();
-                    unsigned char *protocol_param_bytes;
-                    std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&protocol_param)),
-                              static_cast<const unsigned char *>(static_cast<const void *>(&protocol_param)) + sizeof protocol_param,
-                              protocol_param_bytes);
                     std::vector<Participant> participants;
                     for (int i = 0; i < task.participants_size(); i++)
                     {
                         Participant participant = task.participants(i);
                         participants.push_back(participant);
                     }
-                    this->user_func->start(cl_copy, protocol_param_bytes, sizeof(protocol_param), participants);
+                    this->user_func->start(cl_copy, protocol_param, participants);
                     this->cl.finish_task(task_id.task_id());
                 }
             }
@@ -125,7 +121,7 @@ DDSClient _colink_parse_args(int argc, char **argv)
 class Initiator : public ProtocolEntry
 {
 public:
-    void start(DDSClient cl, unsigned char *param, size_t param_size, std::vector<Participant> participants)
+    void start(DDSClient cl, std::string param, std::vector<Participant> participants)
     {
         std::cout << "Initiator" << std::endl;
     }
@@ -134,10 +130,10 @@ public:
 class Receiver : public ProtocolEntry
 {
 public:
-    void start(DDSClient cl, unsigned char *param, size_t param_size, std::vector<Participant> participants)
+    void start(DDSClient cl, std::string param, std::vector<Participant> participants) 
     {
-        std::cout << "Receiver" << std::endl;
-        cl.create_entry("tasks:" + cl.get_task_id() + ":output", param, param_size);
+        std::cout << "Receiver" << param << std::endl;
+        cl.create_entry("tasks:" + cl.get_task_id() + ":output", param);
     }
 };
 
@@ -148,14 +144,14 @@ void colink_sdk_p::_protocl_start(DDSClient cl, std::map<string, ProtocolEntry *
     {
         DDSClient cl_copy = cl;
         CoLinkProtocol curr_protocol{x.first, cl_copy, x.second};
-        curr_protocol.start();
-        //threads.push_back(std::thread([](CoLinkProtocol x)
-        //                              { x.start(); },
-        //                              curr_protocol));
+        //curr_protocol.start();
+        threads.push_back(std::thread([](CoLinkProtocol x)
+                                      { x.start(); },
+                                      curr_protocol));
     }
     std::cout << "Started" << std::endl;
-    //for (auto &t : threads)
-    //    t.join();
+    for (auto &t : threads)
+        t.join();
 }
 
 int main(int argc, char **argv)

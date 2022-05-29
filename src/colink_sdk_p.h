@@ -20,7 +20,7 @@ namespace colink_sdk_p
     class ProtocolEntry
     {
     public:
-        virtual void start(DDSClient cl, unsigned char *param, size_t param_size, std::vector<Participant> participants) = 0;
+        virtual void start(DDSClient cl, std::string param, std::vector<Participant> participants) = 0;
     };
 
     class CoLinkProtocol
