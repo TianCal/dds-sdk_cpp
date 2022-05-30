@@ -35,7 +35,7 @@ int main(int argc, char **argv)
                 DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), users[i]};
                 client.import_guest_jwt(users[j]);
                 JWT jwt = decode_jwt_without_validation(users[j]);
-                client.import_core_addr(jwt.user_id, server_address);
+                client.import_core_addr(jwt.user_id, "http://" + server_address);
             }
         }
     }
