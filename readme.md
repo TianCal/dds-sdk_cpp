@@ -1,5 +1,6 @@
-## CoLink SDK for Application
+## CoLink SDK for Application / for Protocol
 CoLink SDK-A provides a toolkit for application developers which allows them to update storage, manage computation requests, and monitor CoLink server status.
+CoLink SDK-P provides a toolkit for protocol developers which allows them to write CoLink Extensions that extend the functionality of CoLink to support new protocols.
 ### Installation  
 
 1. Install gRPC (and CMake): https://grpc.io/docs/languages/cpp/quickstart/#install-grpc
@@ -13,7 +14,7 @@ cmake ..
 make -j
 ```
 
-### Examples
+### SDK-A Examples
 ```
 ./admin_import_user <address> <admin_jwt> 
 ```
@@ -46,4 +47,9 @@ make -j
 ```
 ```
 ./request_core_info <address> <jwt> # <jwt> is optional
+```
+
+### SDK-P Examples
+```
+./protocol_greetings <address> <user_jwt>
 ```
