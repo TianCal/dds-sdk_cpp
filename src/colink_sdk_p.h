@@ -33,6 +33,8 @@ namespace colink_sdk_p
         DDSClient cl;
         ProtocolEntry *user_func;
     };
+    
     void _protocl_start(DDSClient cl, std::map<std::string, ProtocolEntry *> user_funcs);
+    DDSClient _colink_parse_args(int argc, char **argv);
 }
 #endif

@@ -104,7 +104,7 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 ########################################################################
-add_library(libcolinksdk "src/colink_sdk.cc")
+add_library(libcolinksdk "src/colink_sdk.cc" "src/colink_sdk_p.cc")
 target_link_libraries(libcolinksdk
     colink_grpc_proto
     ${_PROTOBUF_LIBPROTOBUF}
@@ -116,12 +116,12 @@ add_dependencies(libcolinksdk ${DEPENDENCIES})
 include_directories(src)
 include_directories(thirdparty)
 foreach(_target admin_import_user admin_import_users_and_exchange_guest_jwts auto_confirm request_core_info user_run_task user_refresh_token user_confirm_task user_import_guest_jwt get_next_greeting_message user_run_local_task user_greetings_to_multiple_user)
-    add_executable(${_target} "examples/${_target}.cc")
+    add_executable(${_target} "examples/sdk-a/${_target}.cc")
     target_link_libraries(${_target} libcolinksdk)
 endforeach()
 
-foreach(_target colink_sdk_p)
-    add_executable(${_target} "src/${_target}.cc")
+foreach(_target protocol_greetings)
+    add_executable(${_target} "examples/sdk-p/${_target}.cc")
     target_link_libraries(${_target} libcolinksdk)
 endforeach()
 
