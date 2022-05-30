@@ -1,6 +1,6 @@
 #include <secp256k1.h>
 #include <grpc++/grpc++.h>
-#include "colink_sdk.h"
+#include "colink_sdk_a.h"
 #include <chrono>
 using namespace colink_sdk_a;
 

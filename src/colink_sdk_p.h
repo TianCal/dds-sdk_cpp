@@ -2,7 +2,7 @@
 #define COLINK_SDK_P_H
 
 #include "colink.grpc.pb.h"
-#include "colink_sdk.h"
+#include "colink_sdk_a.h"
 #include <grpc++/grpc++.h>
 #include <iostream>
 #include <string>
@@ -33,7 +33,7 @@ namespace colink_sdk_p
         DDSClient cl;
         ProtocolEntry *user_func;
     };
-    
+
     void _protocl_start(DDSClient cl, std::map<std::string, ProtocolEntry *> user_funcs);
     DDSClient _colink_parse_args(int argc, char **argv);
 }

@@ -1,6 +1,6 @@
 
 #include <grpc++/grpc++.h>
-#include "colink_sdk.h"
+#include "colink_sdk_a.h"
 #include "colink_sdk_p.h"
 using namespace colink_sdk_a;
 using namespace colink_sdk_p;

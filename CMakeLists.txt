@@ -104,7 +104,7 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 ########################################################################
-add_library(libcolinksdk "src/colink_sdk.cc" "src/colink_sdk_p.cc")
+add_library(libcolinksdk "src/colink_sdk_a.cc" "src/colink_sdk_p.cc")
 target_link_libraries(libcolinksdk
     colink_grpc_proto
     ${_PROTOBUF_LIBPROTOBUF}
@@ -130,7 +130,7 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
 install(TARGETS libcolinksdk DESTINATION lib)
-install(FILES "src/colink_sdk.h" DESTINATION include)
+install(FILES "src/colink_sdk_a.h" DESTINATION include)
 install(FILES ${colink_grpc_headers} DESTINATION include)
 install(FILES ${colink_proto_headers} DESTINATION include)
 install(DIRECTORY thirdparty/ DESTINATION include FILES_MATCHING PATTERN "*.h")

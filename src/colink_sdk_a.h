@@ -1,5 +1,5 @@
-#ifndef COLINK_SDK_H
-#define COLINK_SDK_H
+#ifndef COLINK_SDK_A_H
+#define COLINK_SDK_A_H
 
 #include "colink.grpc.pb.h"
 #include <grpc++/grpc++.h>
