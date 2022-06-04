@@ -1,12 +1,12 @@
 #include <secp256k1.h>
 #include <grpc++/grpc++.h>
 #include "colink_sdk_a.h"
+using namespace colink;
 using namespace colink_sdk_a;
+using std::string;
 
 int main(int argc, char **argv)
 {
-    using std::string;
-    using namespace colink;
     string server_address = argv[1];
     string jwt_initiator = argv[2];
     string msg = "hello";
@@ -15,7 +15,8 @@ int main(int argc, char **argv)
     initiator.set_user_id(user_id_initiator);
     initiator.set_ptype("initiator");
     std::vector<Participant> participants{initiator};
-    for (int i = 3; i < argc; i++) {
+    for (int i = 3; i < argc; i++)
+    {
         Participant curr_receiver;
         curr_receiver.set_user_id(decode_jwt_without_validation(argv[i]).user_id);
         curr_receiver.set_ptype("receiver");

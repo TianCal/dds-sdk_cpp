@@ -2,10 +2,10 @@
 #include <grpc++/grpc++.h>
 #include "colink_sdk_a.h"
 using namespace colink_sdk_a;
+using std::string;
 
 int main(int argc, char **argv)
 {
-    using std::string;
     string server_address = argv[1];
     string core_jwt = argv[2];
     int num = std::stoi(argv[3]);

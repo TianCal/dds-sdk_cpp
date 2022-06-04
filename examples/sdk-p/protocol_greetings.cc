@@ -1,4 +1,3 @@
-
 #include <grpc++/grpc++.h>
 #include "colink_sdk_a.h"
 #include "colink_sdk_p.h"
