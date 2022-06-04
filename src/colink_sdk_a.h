@@ -16,7 +16,7 @@ using grpc::ClientContext;
 using grpc::Status;
 using grpc::Channel;
 
-namespace colink_sdk_a
+namespace colink
 {
     struct JWT
     {

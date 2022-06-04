@@ -11,10 +11,10 @@
 #include <tuple>
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
 using namespace colink;
-using namespace colink_sdk_a;
 using grpc::ClientContext;
 using grpc::Status;
-namespace colink_sdk_p
+
+namespace colink
 {
     class ProtocolEntry
     {

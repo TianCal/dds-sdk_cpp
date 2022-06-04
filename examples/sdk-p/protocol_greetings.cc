@@ -1,9 +1,7 @@
 #include <grpc++/grpc++.h>
 #include "colink_sdk_a.h"
 #include "colink_sdk_p.h"
-using namespace colink_sdk_a;
-using namespace colink_sdk_p;
-
+using namespace colink;
 class Initiator : public ProtocolEntry
 {
 public:
@@ -29,6 +27,6 @@ int main(int argc, char **argv)
     std::map<std::string, ProtocolEntry *> user_funcs;
     user_funcs["greetings:initiator"] = new Initiator();
     user_funcs["greetings:receiver"] = new Receiver();
-    colink_sdk_p::_protocl_start(cl, user_funcs);
+    colink::_protocl_start(cl, user_funcs);
     return 0;
 }

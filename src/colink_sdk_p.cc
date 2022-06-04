@@ -1,13 +1,11 @@
 #include "colink_sdk_p.h"
 #include <thread>
 using namespace colink;
-using namespace colink_sdk_a;
-using colink_sdk_p::ProtocolEntry;
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
-void colink_sdk_p::CoLinkProtocol::start()
+void colink::CoLinkProtocol::start()
 {
     std::string operator_mq_key = "_internal:protocols:" + this->protocol_and_role + ":operator_mq";
     StorageEntry read_key;
@@ -106,7 +104,7 @@ void colink_sdk_p::CoLinkProtocol::start()
         }
     }
 }
-DDSClient colink_sdk_p::_colink_parse_args(int argc, char **argv)
+DDSClient colink::_colink_parse_args(int argc, char **argv)
 {
     std::string server_address = argv[1];
     std::string jwt = argv[2];
@@ -114,14 +112,13 @@ DDSClient colink_sdk_p::_colink_parse_args(int argc, char **argv)
     return cl;
 }
 
-void colink_sdk_p::_protocl_start(DDSClient cl, std::map<std::string, ProtocolEntry *> user_funcs)
+void colink::_protocl_start(DDSClient cl, std::map<std::string, ProtocolEntry *> user_funcs)
 {
     std::vector<std::thread> threads;
     for (const auto &x : user_funcs)
     {
         DDSClient cl_copy = cl;
         CoLinkProtocol curr_protocol{x.first, cl_copy, x.second};
-        // curr_protocol.start();
         threads.push_back(std::thread([](CoLinkProtocol x)
                                       { x.start(); },
                                       curr_protocol));

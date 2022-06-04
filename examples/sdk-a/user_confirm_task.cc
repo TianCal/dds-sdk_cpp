@@ -1,7 +1,6 @@
 #include <grpc++/grpc++.h>
 #include "colink_sdk_a.h"
 using namespace colink;
-using namespace colink_sdk_a;
 using std::string;
 
 int main(int argc, char **argv)

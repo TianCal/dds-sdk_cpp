@@ -3,7 +3,6 @@
 #include "colink_sdk_a.h"
 #include <chrono>
 using namespace colink;
-using namespace colink_sdk_a;
 using std::string;
 
 int main(int argc, char **argv)
