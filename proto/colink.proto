@@ -1,24 +1,24 @@
 syntax = "proto3";
-package dds;
+package colink;
 
-service DDS {
+service CoLink {
     // Given a valid JWT and a expiration timestamp, generates a new JWT token with the expiration time set to the input timestamp.
     // Requires user jwt.
     // You cannot refresh an admin token.
     rpc RefreshToken (RefreshTokenRequest) returns (Jwt);
 
     // Generates a JWT from a user with a public/secret key pair.
-    // The generated JWT specify the user's role as a user, contains their user_id, which is a base64 encoding of the provided public key.
+    // The generated JWT specifies the user's role as a user, contains their user_id, which is a base64 encoding of the provided public key.
     // Requires admin Jwt.
     rpc ImportUser (UserConsent) returns (Jwt);
 
-    // Creates an entry in DDS storage.
+    // Creates an entry in CoLink storage.
     // In the entry passed in to the call, the `key_name` field must be nonempty. Every other field is is ignored.
     // Requires user or admin JWT.
     // Returns a key_path with current timestamp included.
     rpc CreateEntry (StorageEntry) returns (StorageEntry);
 
-    // Retrieves entries from DDS storage.
+    // Retrieves entries from CoLink storage.
     // One and only one field among `key_name` and `key_path` is nonempty. If both are nonempty, an error is returned.
     // If key_name is nonempty, returns the latest version of the entry with that key name.
     // This is done by first obtaining the timestamp representing the latest version of the entry,
@@ -31,7 +31,7 @@ service DDS {
     // Requires user or admin JWT.
     rpc ReadEntries (StorageEntries) returns (StorageEntries);
 
-    // Updates an entry in DDS storage.
+    // Updates an entry in CoLink storage.
     // In the entry passed in to the call, the `key_name` field must be nonempty. Every other field is is ignored.
     // Creates a new entry with the current timestamp in the key_path field.
     // Sets the latest entry to current timestamp.
@@ -39,14 +39,14 @@ service DDS {
     // Returns a key_path with current timestamp included.
     rpc UpdateEntry (StorageEntry) returns (StorageEntry);
 
-    // Deletes an entry from DDS storage.
+    // Deletes an entry from CoLink storage.
     // Sets the latest entry to current timestamp, but unlike UpdateEntry, we do not create a new entry with the current
     // timestamp in the key_path field. Therefore the current timestamp points to nothing.
     // Requires user or admin JWT.
     // Returns a key_path with current timestamp included.
     rpc DeleteEntry (StorageEntry) returns (StorageEntry);
 
-    // Returns list of entries in DDS storage whose key_path starts with input prefix.
+    // Returns list of entries in CoLink storage whose key_path starts with input prefix.
     // Requires user or admin JWT.
     rpc ReadKeys (ReadKeysRequest) returns (StorageEntries);
 
@@ -64,6 +64,7 @@ service DDS {
     // Represent user to sign a decision for this task.
     // Sync the decision to the initiator.
     // Send task status to MQ.
+    // The task will be ignored if is_approved and is_rejected are both false in the decision.
     // In request, task_id is required.
     // Require user JWT.
     rpc ConfirmTask (ConfirmTaskRequest) returns (Empty);
@@ -109,7 +110,7 @@ message Jwt {
 }
 
 /**
- * An entry in the DDS storage.
+ * An entry in the CoLink storage.
  */
 message StorageEntry {
     // The key name of the entry.
@@ -245,11 +246,11 @@ message MQQueueName {
     string queue_name = 1;
 }
 
-message DDSInternalTaskIDWithKeyPath {
+message CoLinkInternalTaskIDWithKeyPath {
     string key_path = 1;
     string task_id = 2;
 }
 
-message DDSInternalTaskIDList {
-    repeated DDSInternalTaskIDWithKeyPath task_ids_with_key_paths = 1;
+message CoLinkInternalTaskIDList {
+    repeated CoLinkInternalTaskIDWithKeyPath task_ids_with_key_paths = 1;
 }

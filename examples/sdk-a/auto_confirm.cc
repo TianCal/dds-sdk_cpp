@@ -1,18 +1,16 @@
+#include "colink_sdk_a.h"
 #include <grpc++/grpc++.h>
-#include "colink_sdk.h"
 using namespace colink;
+using std::string;
 
 int main(int argc, char **argv)
 {
-    using std::string;
-    using namespace dds;
     string server_address = argv[1];
     string jwt = argv[2];
     string protocol_name = argv[3];
-    
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
-    string list_key = "_dds_internal:protocols:" + protocol_name + ":waiting";
-    string latest_key = "_dds_internal:protocols:" + protocol_name + ":waiting:latest";
+    string list_key = "_internal:protocols:" + protocol_name + ":waiting";
+    string latest_key = "_internal:protocols:" + protocol_name + ":waiting:latest";
     // Step 1: get the list of key_path which contains the timestamp.
     StorageEntry read_key;
     read_key.set_key_name(list_key);
@@ -21,7 +19,7 @@ int main(int argc, char **argv)
     // Step 2: find the earliest timestamp in the list.
     int64_t start_timestamp = INT64_MAX;
     StorageEntry list_entry = res[0];
-    DDSInternalTaskIDList list;
+    CoLinkInternalTaskIDList list;
     list.ParseFromString(list_entry.payload());
     if (list.task_ids_with_key_paths_size() == 0)
     {
@@ -29,7 +27,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        for (DDSInternalTaskIDWithKeyPath currTask : list.task_ids_with_key_paths())
+        for (CoLinkInternalTaskIDWithKeyPath currTask : list.task_ids_with_key_paths())
         {
             start_timestamp = std::min(start_timestamp, get_timestamp(currTask.key_path()));
         }
@@ -43,13 +41,14 @@ int main(int argc, char **argv)
         // Step 5: process subscription message.
         string data = subscriber.get_next();
         SubscriptionMessage message;
-        message.ParseFromString(data); 
+        message.ParseFromString(data);
         // Step 5.1: match the change_type.
-        if (message.change_type() != "delete") {
+        if (message.change_type() != "delete")
+        {
             Task task_id;
             task_id.ParseFromString(message.payload());
             StorageEntry read_key;
-            read_key.set_key_name("_dds_internal:tasks:" + task_id.task_id());
+            read_key.set_key_name("_internal:tasks:" + task_id.task_id());
             std::vector<StorageEntry> read_keys{read_key};
             std::vector<StorageEntry> res = client.read_entries(read_keys);
             StorageEntry task_entry = res[0];

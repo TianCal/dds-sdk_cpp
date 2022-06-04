@@ -1,12 +1,11 @@
-#include <secp256k1.h>
+#include "colink_sdk_a.h"
 #include <grpc++/grpc++.h>
-#include "colink_sdk.h"
+#include <secp256k1.h>
 using namespace colink;
+using std::string;
 
 int main(int argc, char **argv)
 {
-    using std::string;
-    using namespace dds;
     string server_address = argv[1];
     string jwt_a = argv[2];
     string jwt_b = argv[3];
@@ -22,7 +21,8 @@ int main(int argc, char **argv)
     receiver.set_ptype("receiver");
     std::vector<Participant> participants{initiator, receiver};
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt_a};
-    string task_id = client.run_task("greetings", (unsigned char *)msg.c_str(), msg.size(), participants, true);
-    std::cout << "Task " << task_id << " has been created, but it will remain in waiting status until the protocol starts." << std::endl;
+    string task_id = client.run_task("greetings", msg, participants, true);
+    std::cout << "Task " << task_id
+              << " has been created, but it will remain in waiting status until the protocol starts." << std::endl;
     return 0;
 }
