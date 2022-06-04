@@ -5,7 +5,7 @@
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include "base64urldecode.h"
-#include "random.h"
+#include "secp_random.h"
 using namespace colink;
 using namespace colink_sdk_a;
 using grpc::Channel;

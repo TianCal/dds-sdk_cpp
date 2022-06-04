@@ -1,0 +1,49 @@
+name: Website Documentation Update
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download protoc
+        run: curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.14.0/protoc-3.14.0-linux-x86_64.zip
+      - name: Unzip protoc/Install protoc
+        run: sudo unzip -o protoc-3.14.0-linux-x86_64.zip -d /usr/local bin/protoc
+      - name: Install protoc
+        run: sudo unzip -o protoc-3.14.0-linux-x86_64.zip -d /usr/local 'include/*'
+      - name: Download pre-built binary for protoc-gen-doc
+        run: curl -OL https://github.com/pseudomuto/protoc-gen-doc/releases/download/v1.5.1/protoc-gen-doc_1.5.1_linux_amd64.tar.gz
+      - name: Unzip binary
+        run: tar -xf protoc-gen-doc_1.5.1_linux_amd64.tar.gz
+      - name: Generate doc
+        run: sudo protoc --plugin=protoc-gen-doc=./protoc-gen-doc --doc_out=./ --doc_opt=markdown,_index.md ./colink.proto
+      - name: Delete first line of the generated doc(to use a different title)
+        run: sed -i '1,1d' _index.md
+      - name: Insert web title at the beginning
+        run: "echo -e '---\n title: \x22gRPC Service Specification\x22 \n linkTitle: \x22gRPC Service Specification\x22 \n weight: 8 \n description: > \n  Read the documentation for gRPC data types and service interfaces. \n--- \n' | cat - _index.md > temp && mv temp _index.md"
+      - name: SSH Agent
+        run: |
+          eval `ssh-agent`
+          ssh-add - <<< "${{ secrets.SSH_KEY }}"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+      - name: Clone website repository
+        run: git clone git@github.com:CoLearn-Dev/CoLearn-Dev.github.io.git
+      - name: Move to correct folder
+        run: mv _index.md CoLearn-Dev.github.io/content/en/docs/ProtocolDoc/_index.md
+      - name: Add back the index file
+        working-directory: ./CoLearn-Dev.github.io
+        run: git add content/en/docs/ProtocolDoc/_index.md
+      - name: Set pusher e-mail (a must-do)
+        run: git config --global user.email "104302037+colearn-dev-bot@users.noreply.github.com"
+      - name: Set pusher name (a must-do)
+        run: git config --global user.name "colearn-dev-bot"
+      - name: Commit
+        working-directory: ./CoLearn-Dev.github.io
+        run: git commit -m "Auto-generate doc"
+      - name: Push
+        working-directory: ./CoLearn-Dev.github.io
+        run: git push
