@@ -119,9 +119,7 @@ void colink::_protocl_start(DDSClient cl, std::map<std::string, ProtocolEntry *>
     {
         DDSClient cl_copy = cl;
         CoLinkProtocol curr_protocol{x.first, cl_copy, x.second};
-        threads.push_back(std::thread([](CoLinkProtocol x)
-                                      { x.start(); },
-                                      curr_protocol));
+        threads.push_back(std::thread([](CoLinkProtocol x) { x.start(); }, curr_protocol));
     }
     std::cout << "Started" << std::endl;
     for (auto &t : threads)

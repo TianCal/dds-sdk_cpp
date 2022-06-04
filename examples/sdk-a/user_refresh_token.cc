@@ -1,6 +1,6 @@
-#include <secp256k1.h>
-#include <grpc++/grpc++.h>
 #include "colink_sdk_a.h"
+#include <grpc++/grpc++.h>
+#include <secp256k1.h>
 using namespace colink;
 using std::string;
 

@@ -1,10 +1,10 @@
-#include <grpc++/grpc++.h>
 #include "colink_sdk_a.h"
 #include "colink_sdk_p.h"
+#include <grpc++/grpc++.h>
 using namespace colink;
 class Initiator : public ProtocolEntry
 {
-public:
+  public:
     void start(DDSClient cl, std::string param, std::vector<Participant> participants)
     {
         std::cout << "Initiator" << std::endl;
@@ -13,7 +13,7 @@ public:
 
 class Receiver : public ProtocolEntry
 {
-public:
+  public:
     void start(DDSClient cl, std::string param, std::vector<Participant> participants)
     {
         std::cout << "Receiver, received: " << param << std::endl;

@@ -1,11 +1,11 @@
 #include "colink_sdk_a.h"
-#include "colink.grpc.pb.h"
-#include <google/protobuf/message.h>
-#include <sstream>
-#include <openssl/sha.h>
-#include <openssl/evp.h>
 #include "base64urldecode.h"
+#include "colink.grpc.pb.h"
 #include "secp_random.h"
+#include <google/protobuf/message.h>
+#include <openssl/evp.h>
+#include <openssl/sha.h>
+#include <sstream>
 using namespace colink;
 using grpc::Channel;
 using grpc::ClientContext;
@@ -30,12 +30,14 @@ colink::DDSClient::DDSClient(std::shared_ptr<Channel> channel, std::string admin
     jwt = admin_jwt;
 }
 
-std::string colink::DDSClient::import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp, int64_t expiration_timestamp, const unsigned char *signature)
+std::string colink::DDSClient::import_user(secp256k1_pubkey user_public_key, int64_t signature_timestamp,
+                                           int64_t expiration_timestamp, const unsigned char *signature)
 {
     unsigned char compressed_user_public_key_bytes[33];
     size_t compressed_user_public_key_len = sizeof(compressed_user_public_key_bytes);
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
-    if (!secp256k1_ec_pubkey_serialize(ctx, compressed_user_public_key_bytes, &compressed_user_public_key_len, &user_public_key, SECP256K1_EC_COMPRESSED))
+    if (!secp256k1_ec_pubkey_serialize(ctx, compressed_user_public_key_bytes, &compressed_user_public_key_len,
+                                       &user_public_key, SECP256K1_EC_COMPRESSED))
     {
         throw std::invalid_argument("Cannot serialize user public key");
     }
@@ -63,7 +65,9 @@ std::string colink::DDSClient::import_user(secp256k1_pubkey user_public_key, int
 
 std::string colink::DDSClient::refresh_token()
 {
-    return this->refresh_token_with_expiration_time(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400);
+    return this->refresh_token_with_expiration_time(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() +
+        86400);
 }
 
 void colink::DDSClient::set_task_id(std::string task_id)
@@ -112,8 +116,10 @@ std::tuple<std::string, secp256k1_pubkey> colink::DDSClient::request_core_info()
         secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_NONE);
         std::string compressed_core_public_key = response.core_public_key();
         unsigned char compressed_core_public_key_bytes[33] = {0};
-        std::memcpy(compressed_core_public_key_bytes, compressed_core_public_key.data(), compressed_core_public_key.length());
-        if (!secp256k1_ec_pubkey_parse(ctx, &core_public_key, compressed_core_public_key_bytes, sizeof(compressed_core_public_key_bytes)))
+        std::memcpy(compressed_core_public_key_bytes, compressed_core_public_key.data(),
+                    compressed_core_public_key.length());
+        if (!secp256k1_ec_pubkey_parse(ctx, &core_public_key, compressed_core_public_key_bytes,
+                                       sizeof(compressed_core_public_key_bytes)))
             throw std::invalid_argument("The public key could not be decoded in compressed serialized format");
         return std::make_tuple(response.mq_uri(), core_public_key);
     }
@@ -223,13 +229,19 @@ void colink::DDSClient::import_core_addr(std::string user_id, std::string core_a
     this->create_entry(key_name, core_addr);
 }
 
-std::string colink::DDSClient::run_task(std::string protocol_name, std::string protocol_param, std::vector<Participant> participants, bool require_agreement)
+std::string colink::DDSClient::run_task(std::string protocol_name, std::string protocol_param,
+                                        std::vector<Participant> participants, bool require_agreement)
 {
-    int expiration_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 86400;
-    return this->run_task_with_expiration_time(protocol_name, protocol_param, participants, require_agreement, expiration_time);
+    int expiration_time =
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() +
+        86400;
+    return this->run_task_with_expiration_time(protocol_name, protocol_param, participants, require_agreement,
+                                               expiration_time);
 }
 
-std::string colink::DDSClient::run_task_with_expiration_time(std::string protocol_name, std::string protocol_param, std::vector<Participant> participants, bool require_agreement, int64_t expiration_time)
+std::string colink::DDSClient::run_task_with_expiration_time(std::string protocol_name, std::string protocol_param,
+                                                             std::vector<Participant> participants,
+                                                             bool require_agreement, int64_t expiration_time)
 {
     Task request;
     for (int i = 0; i < participants.size(); i++)
@@ -343,37 +355,49 @@ JWT colink::decode_jwt_without_validation(std::string jwt)
     return structed_JWT;
 }
 
-std::tuple<int64_t, const unsigned char *> colink::prepare_import_user_signature(secp256k1_pubkey user_pub_key, const unsigned char *user_sec_key, secp256k1_pubkey core_pub_key, int64_t expiration_timestamp)
+std::tuple<int64_t, const unsigned char *> colink::prepare_import_user_signature(secp256k1_pubkey user_pub_key,
+                                                                                 const unsigned char *user_sec_key,
+                                                                                 secp256k1_pubkey core_pub_key,
+                                                                                 int64_t expiration_timestamp)
 {
-    int64_t signature_timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t signature_timestamp =
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
     unsigned char compressed_core_pubkey[33];
     unsigned char compressed_user_pubkey[33];
     size_t compressed_pubkey_len;
     compressed_pubkey_len = sizeof(compressed_core_pubkey);
-    if (!secp256k1_ec_pubkey_serialize(ctx, compressed_core_pubkey, &compressed_pubkey_len, &core_pub_key, SECP256K1_EC_COMPRESSED))
+    if (!secp256k1_ec_pubkey_serialize(ctx, compressed_core_pubkey, &compressed_pubkey_len, &core_pub_key,
+                                       SECP256K1_EC_COMPRESSED))
     {
         throw std::invalid_argument("Invalid core public key passed");
     }
     compressed_pubkey_len = sizeof(compressed_user_pubkey);
-    if (!secp256k1_ec_pubkey_serialize(ctx, compressed_user_pubkey, &compressed_pubkey_len, &user_pub_key, SECP256K1_EC_COMPRESSED))
+    if (!secp256k1_ec_pubkey_serialize(ctx, compressed_user_pubkey, &compressed_pubkey_len, &user_pub_key,
+                                       SECP256K1_EC_COMPRESSED))
     {
         throw std::invalid_argument("Invalid core public key passed");
     }
     unsigned char signature_time_stamp_bytes[sizeof(signature_timestamp)];
 
     std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&signature_timestamp)),
-              static_cast<const unsigned char *>(static_cast<const void *>(&signature_timestamp)) + sizeof signature_timestamp,
+              static_cast<const unsigned char *>(static_cast<const void *>(&signature_timestamp)) +
+                  sizeof signature_timestamp,
               signature_time_stamp_bytes);
     unsigned char expiration_time_stamp_bytes[sizeof(expiration_timestamp)];
     std::copy(static_cast<const unsigned char *>(static_cast<const void *>(&expiration_timestamp)),
-              static_cast<const unsigned char *>(static_cast<const void *>(&expiration_timestamp)) + sizeof expiration_timestamp,
+              static_cast<const unsigned char *>(static_cast<const void *>(&expiration_timestamp)) +
+                  sizeof expiration_timestamp,
               expiration_time_stamp_bytes);
-    unsigned char msg[sizeof(expiration_timestamp) + sizeof(signature_timestamp) + sizeof(compressed_core_pubkey) + sizeof(compressed_user_pubkey)];
+    unsigned char msg[sizeof(expiration_timestamp) + sizeof(signature_timestamp) + sizeof(compressed_core_pubkey) +
+                      sizeof(compressed_user_pubkey)];
     memcpy(msg, compressed_user_pubkey, sizeof(compressed_user_pubkey));
     memcpy(msg + sizeof(compressed_user_pubkey), signature_time_stamp_bytes, sizeof(signature_time_stamp_bytes));
-    memcpy(msg + sizeof(compressed_user_pubkey) + sizeof(signature_time_stamp_bytes), expiration_time_stamp_bytes, sizeof(expiration_time_stamp_bytes));
-    memcpy(msg + sizeof(compressed_user_pubkey) + sizeof(signature_time_stamp_bytes) + sizeof(expiration_time_stamp_bytes), compressed_core_pubkey, sizeof(compressed_core_pubkey));
+    memcpy(msg + sizeof(compressed_user_pubkey) + sizeof(signature_time_stamp_bytes), expiration_time_stamp_bytes,
+           sizeof(expiration_time_stamp_bytes));
+    memcpy(msg + sizeof(compressed_user_pubkey) + sizeof(signature_time_stamp_bytes) +
+               sizeof(expiration_time_stamp_bytes),
+           compressed_core_pubkey, sizeof(compressed_core_pubkey));
     unsigned char msg_hash[SHA256_DIGEST_LENGTH];
     SHA256(msg, sizeof(msg), msg_hash);
     secp256k1_ecdsa_signature sig;
@@ -410,7 +434,9 @@ secp256k1_pubkey colink::generate_user(unsigned char *seckey)
 
 int64_t colink::generate_expiration_timestamp(int64_t seconds_from_now)
 {
-    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() + seconds_from_now;
+    return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch())
+               .count() +
+           seconds_from_now;
 }
 
 int64_t colink::get_timestamp(std::string key_path)

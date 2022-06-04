@@ -1,5 +1,5 @@
-#include <grpc++/grpc++.h>
 #include "colink_sdk_a.h"
+#include <grpc++/grpc++.h>
 using namespace colink;
 using std::string;
 
@@ -8,7 +8,6 @@ int main(int argc, char **argv)
     string server_address = argv[1];
     string jwt = argv[2];
     string protocol_name = argv[3];
-    
     DDSClient client{grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials()), jwt};
     string list_key = "_internal:protocols:" + protocol_name + ":waiting";
     string latest_key = "_internal:protocols:" + protocol_name + ":waiting:latest";
@@ -42,9 +41,10 @@ int main(int argc, char **argv)
         // Step 5: process subscription message.
         string data = subscriber.get_next();
         SubscriptionMessage message;
-        message.ParseFromString(data); 
+        message.ParseFromString(data);
         // Step 5.1: match the change_type.
-        if (message.change_type() != "delete") {
+        if (message.change_type() != "delete")
+        {
             Task task_id;
             task_id.ParseFromString(message.payload());
             StorageEntry read_key;
