@@ -119,7 +119,11 @@ include_directories(thirdparty)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
-
+install(TARGETS libcolinksdk
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
 install(TARGETS libcolinksdk DESTINATION lib)
 install(FILES "src/colink_sdk_a.h" DESTINATION include)
 install(FILES ${colink_grpc_headers} DESTINATION include)
