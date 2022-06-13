@@ -126,7 +126,5 @@ install(TARGETS libcolinksdk
     )
 install(TARGETS libcolinksdk DESTINATION lib)
 install(FILES "src/colink_sdk_a.h" DESTINATION include)
-install(FILES ${colink_grpc_headers} DESTINATION include)
-install(FILES ${colink_proto_headers} DESTINATION include)
 install(DIRECTORY thirdparty/ DESTINATION include FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY thirdparty/ DESTINATION include FILES_MATCHING PATTERN "*.hpp")
