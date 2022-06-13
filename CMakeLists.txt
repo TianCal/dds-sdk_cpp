@@ -128,7 +128,6 @@ install(TARGETS libcolinksdk
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
-install(TARGETS libcolinksdk DESTINATION lib)
 install(FILES "src/colink_sdk_a.h" "src/colink_sdk_p.h" DESTINATION include)
 install(DIRECTORY thirdparty/ DESTINATION include FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY thirdparty/ DESTINATION include FILES_MATCHING PATTERN "*.hpp")
