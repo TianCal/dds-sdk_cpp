@@ -104,7 +104,11 @@ include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 ########################################################################
-add_library(libcolinksdk "src/colink_sdk_a.cc" "src/colink_sdk_p.cc")
+add_library(libcolinksdk 
+            src/colink_sdk_a.h
+            src/colink_sdk_a.cc
+            src/colink_sdk_p.h
+            src/colink_sdk_p.cc)
 target_link_libraries(libcolinksdk
     colink_grpc_proto
     ${_PROTOBUF_LIBPROTOBUF}
@@ -125,6 +129,6 @@ install(TARGETS libcolinksdk
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 install(TARGETS libcolinksdk DESTINATION lib)
-install(FILES "src/colink_sdk_a.h" DESTINATION include)
+install(FILES "src/colink_sdk_a.h" "src/colink_sdk_p.h" DESTINATION include)
 install(DIRECTORY thirdparty/ DESTINATION include FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY thirdparty/ DESTINATION include FILES_MATCHING PATTERN "*.hpp")
